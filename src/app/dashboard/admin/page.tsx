@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { WORDS, CATEGORIES } from "@/lib/words";
-import type { Word } from "@/lib/words";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { CATEGORIES } from "@/lib/words";
 
 type Tab = "words" | "users" | "stats";
 
@@ -13,6 +12,15 @@ interface UserData {
   role: string;
 }
 
+interface DBWord {
+  id: number;
+  de: string;
+  ku: string;
+  category: string;
+  note: string | null;
+  is_phrase: number;
+}
+
 interface WordForm {
   de: string;
   ku: string;
@@ -20,7 +28,15 @@ interface WordForm {
   n: string;
 }
 
+interface Toast {
+  id: number;
+  message: string;
+  type: "success" | "error";
+}
+
 const emptyForm: WordForm = { de: "", ku: "", c: "greetings", n: "" };
+
+const WORDS_PER_PAGE = 50;
 
 const categoryKeys = Object.keys(CATEGORIES).filter((k) => k !== "all");
 
@@ -36,9 +52,24 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [showModal, setShowModal] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingWord, setEditingWord] = useState<DBWord | null>(null);
   const [form, setForm] = useState<WordForm>(emptyForm);
-  const [words, setWords] = useState<Word[]>([...WORDS]);
+  const [words, setWords] = useState<DBWord[]>([]);
+  const [wordsLoading, setWordsLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Toast notifications
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastIdRef = useRef(0);
+
+  const showToast = useCallback((message: string, type: "success" | "error") => {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  }, []);
 
   // Check auth
   useEffect(() => {
@@ -64,11 +95,32 @@ export default function AdminPage() {
     checkAuth();
   }, []);
 
+  // Load words from API
+  const fetchWords = useCallback(async () => {
+    setWordsLoading(true);
+    try {
+      const res = await fetch("/api/words");
+      if (!res.ok) throw new Error("Fehler beim Laden");
+      const data = await res.json();
+      setWords(data.words ?? []);
+    } catch {
+      showToast("Worter konnten nicht geladen werden.", "error");
+    } finally {
+      setWordsLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchWords();
+    }
+  }, [isAdmin, fetchWords]);
+
   // Filtered words
   const filteredWords = useMemo(() => {
     let result = words;
     if (filterCategory !== "all") {
-      result = result.filter((w) => w.c === filterCategory);
+      result = result.filter((w) => w.category === filterCategory);
     }
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -76,17 +128,30 @@ export default function AdminPage() {
         (w) =>
           w.de.toLowerCase().includes(q) ||
           w.ku.toLowerCase().includes(q) ||
-          (w.n && w.n.toLowerCase().includes(q))
+          (w.note && w.note.toLowerCase().includes(q))
       );
     }
     return result;
   }, [words, filterCategory, search]);
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredWords.length / WORDS_PER_PAGE));
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterCategory]);
+
+  const paginatedWords = useMemo(() => {
+    const start = (currentPage - 1) * WORDS_PER_PAGE;
+    return filteredWords.slice(start, start + WORDS_PER_PAGE);
+  }, [filteredWords, currentPage]);
+
   // Category stats
   const categoryStats = useMemo(() => {
     const stats: Record<string, number> = {};
     for (const w of words) {
-      stats[w.c] = (stats[w.c] || 0) + 1;
+      stats[w.category] = (stats[w.category] || 0) + 1;
     }
     return stats;
   }, [words]);
@@ -94,51 +159,101 @@ export default function AdminPage() {
   // Handlers
   const openAddModal = useCallback(() => {
     setForm(emptyForm);
-    setEditingIndex(null);
+    setEditingWord(null);
     setShowModal(true);
   }, []);
 
-  const openEditModal = useCallback(
-    (index: number) => {
-      const w = words[index];
-      setForm({ de: w.de, ku: w.ku, c: w.c, n: w.n || "" });
-      setEditingIndex(index);
-      setShowModal(true);
-    },
-    [words]
-  );
+  const openEditModal = useCallback((word: DBWord) => {
+    setForm({ de: word.de, ku: word.ku, c: word.category, n: word.note || "" });
+    setEditingWord(word);
+    setShowModal(true);
+  }, []);
 
   const closeModal = useCallback(() => {
     setShowModal(false);
-    setEditingIndex(null);
+    setEditingWord(null);
     setForm(emptyForm);
   }, []);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!form.de.trim() || !form.ku.trim()) return;
+    setSaving(true);
 
-    const newWord: Word = {
-      de: form.de.trim(),
-      ku: form.ku.trim(),
-      c: form.c,
-      ...(form.n.trim() ? { n: form.n.trim() } : {}),
-    };
-
-    if (editingIndex !== null) {
-      setWords((prev) => {
-        const updated = [...prev];
-        updated[editingIndex] = newWord;
-        return updated;
-      });
-    } else {
-      setWords((prev) => [...prev, newWord]);
+    try {
+      if (editingWord) {
+        // PUT - update existing word
+        const res = await fetch("/api/words", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: editingWord.id,
+            de: form.de.trim(),
+            ku: form.ku.trim(),
+            category: form.c,
+            note: form.n.trim() || null,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Fehler beim Speichern");
+        }
+        const data = await res.json();
+        setWords((prev) =>
+          prev.map((w) => (w.id === editingWord.id ? data.word : w))
+        );
+        showToast("Wort erfolgreich aktualisiert.", "success");
+      } else {
+        // POST - create new word
+        const res = await fetch("/api/words", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            de: form.de.trim(),
+            ku: form.ku.trim(),
+            category: form.c,
+            note: form.n.trim() || null,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Fehler beim Hinzufugen");
+        }
+        const data = await res.json();
+        setWords((prev) => [...prev, data.word]);
+        showToast("Wort erfolgreich hinzugefugt.", "success");
+      }
+      closeModal();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Ein Fehler ist aufgetreten.";
+      showToast(msg, "error");
+    } finally {
+      setSaving(false);
     }
-    closeModal();
-  }, [form, editingIndex, closeModal]);
+  }, [form, editingWord, closeModal, showToast]);
 
-  const handleDelete = useCallback((index: number) => {
-    setWords((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  const handleDelete = useCallback(
+    async (word: DBWord) => {
+      if (!confirm(`"${word.de}" wirklich loschen?`)) return;
+
+      try {
+        const res = await fetch("/api/words", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: word.id }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Fehler beim Loschen");
+        }
+        setWords((prev) => prev.filter((w) => w.id !== word.id));
+        showToast("Wort erfolgreich geloscht.", "success");
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Fehler beim Loschen.";
+        showToast(msg, "error");
+      }
+    },
+    [showToast]
+  );
 
   const handleFormChange = useCallback(
     (field: keyof WordForm, value: string) => {
@@ -220,6 +335,33 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0f1a]">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`px-4 py-3 rounded-xl text-sm font-medium shadow-lg border backdrop-blur-md animate-[slideIn_0.3s_ease-out] ${
+              toast.type === "success"
+                ? "bg-[#58CC02]/15 border-[#58CC02]/30 text-[#58CC02]"
+                : "bg-red-500/15 border-red-500/30 text-red-400"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {toast.type === "success" ? (
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              {toast.message}
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Header */}
       <header className="relative overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0f1b3d] via-[#132b4f] to-[#0d3b2e]" />
@@ -349,6 +491,11 @@ export default function AdminPage() {
                 {filterCategory !== "all" && (
                   <> in <span className="text-white font-medium">{CATEGORIES[filterCategory]?.label}</span></>
                 )}
+                {filteredWords.length > WORDS_PER_PAGE && (
+                  <span className="text-gray-600">
+                    {" "}&middot; Seite {currentPage} von {totalPages}
+                  </span>
+                )}
               </p>
               {(search || filterCategory !== "all") && (
                 <button
@@ -365,7 +512,7 @@ export default function AdminPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-white/[0.04]">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ID</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Deutsch</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Kurdisch</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Kategorie</th>
@@ -374,22 +521,31 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
-                  {filteredWords.length === 0 ? (
+                  {wordsLoading ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-12 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-8 h-8 border-2 border-[#58CC02] border-t-transparent rounded-full animate-spin" />
+                          <p className="text-gray-500 text-sm">Worter werden geladen...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : paginatedWords.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                         Keine Worter gefunden.
                       </td>
                     </tr>
                   ) : (
-                    filteredWords.map((word, idx) => {
-                      const globalIndex = words.indexOf(word);
-                      const cat = CATEGORIES[word.c];
+                    paginatedWords.map((word, idx) => {
+                      const cat = CATEGORIES[word.category];
+                      const displayIndex = (currentPage - 1) * WORDS_PER_PAGE + idx + 1;
                       return (
                         <tr
-                          key={`${word.de}-${word.ku}-${idx}`}
+                          key={word.id}
                           className="bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05] transition-colors duration-150"
                         >
-                          <td className="px-4 py-3 text-gray-600 font-mono text-xs">{globalIndex + 1}</td>
+                          <td className="px-4 py-3 text-gray-600 font-mono text-xs">{displayIndex}</td>
                           <td className="px-4 py-3 text-white font-medium">{word.de}</td>
                           <td className="px-4 py-3 text-[#58CC02] font-medium">{word.ku}</td>
                           <td className="px-4 py-3">
@@ -399,12 +555,12 @@ export default function AdminPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-gray-500 text-xs italic max-w-[200px] truncate">
-                            {word.n || "\u2014"}
+                            {word.note || "\u2014"}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                onClick={() => openEditModal(globalIndex)}
+                                onClick={() => openEditModal(word)}
                                 className="p-1.5 rounded-lg text-gray-400 hover:text-[#1CB0F6] hover:bg-[#1CB0F6]/10 transition-all duration-150"
                                 title="Bearbeiten"
                               >
@@ -413,7 +569,7 @@ export default function AdminPage() {
                                 </svg>
                               </button>
                               <button
-                                onClick={() => handleDelete(globalIndex)}
+                                onClick={() => handleDelete(word)}
                                 className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-all duration-150"
                                 title="Loschen"
                               >
@@ -430,6 +586,85 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-xs text-gray-600">
+                  Zeige {(currentPage - 1) * WORDS_PER_PAGE + 1}&ndash;{Math.min(currentPage * WORDS_PER_PAGE, filteredWords.length)} von {filteredWords.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="px-2.5 py-1.5 text-xs font-medium text-gray-400 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3.5 py-1.5 text-xs font-medium text-gray-400 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Zuruck
+                  </button>
+
+                  {/* Page numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((page) => {
+                        if (totalPages <= 7) return true;
+                        if (page === 1 || page === totalPages) return true;
+                        if (Math.abs(page - currentPage) <= 1) return true;
+                        return false;
+                      })
+                      .reduce<(number | string)[]>((acc, page, i, arr) => {
+                        if (i > 0 && typeof arr[i - 1] === "number" && (page as number) - (arr[i - 1] as number) > 1) {
+                          acc.push("...");
+                        }
+                        acc.push(page);
+                        return acc;
+                      }, [])
+                      .map((item, i) =>
+                        typeof item === "string" ? (
+                          <span key={`ellipsis-${i}`} className="px-1.5 text-gray-600 text-xs">...</span>
+                        ) : (
+                          <button
+                            key={item}
+                            onClick={() => setCurrentPage(item)}
+                            className={`w-8 h-8 text-xs font-medium rounded-lg transition-all duration-200 ${
+                              currentPage === item
+                                ? "bg-[#58CC02] text-white shadow-lg shadow-[#58CC02]/20"
+                                : "text-gray-400 bg-white/5 border border-white/10 hover:bg-white/10"
+                            }`}
+                          >
+                            {item}
+                          </button>
+                        )
+                      )}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3.5 py-1.5 text-xs font-medium text-gray-400 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Weiter
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="px-2.5 py-1.5 text-xs font-medium text-gray-400 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -465,7 +700,13 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Gesamt Worter</p>
-                    <p className="text-2xl font-extrabold text-white">{words.length}</p>
+                    <p className="text-2xl font-extrabold text-white">
+                      {wordsLoading ? (
+                        <span className="inline-block w-12 h-7 bg-white/5 rounded animate-pulse" />
+                      ) : (
+                        words.length.toLocaleString("de-DE")
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -550,7 +791,7 @@ export default function AdminPage() {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 className="text-lg font-bold text-white">
-                {editingIndex !== null ? "Wort bearbeiten" : "Neues Wort hinzufugen"}
+                {editingWord !== null ? "Wort bearbeiten" : "Neues Wort hinzufugen"}
               </h3>
               <button
                 onClick={closeModal}
@@ -635,10 +876,13 @@ export default function AdminPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!form.de.trim() || !form.ku.trim()}
-                className="px-5 py-2.5 text-sm font-semibold text-white bg-[#58CC02] hover:bg-[#4CAF00] rounded-xl shadow-lg shadow-[#58CC02]/20 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#58CC02]"
+                disabled={!form.de.trim() || !form.ku.trim() || saving}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-[#58CC02] hover:bg-[#4CAF00] rounded-xl shadow-lg shadow-[#58CC02]/20 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#58CC02] flex items-center gap-2"
               >
-                {editingIndex !== null ? "Speichern" : "Hinzufugen"}
+                {saving && (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+                {editingWord !== null ? "Speichern" : "Hinzufugen"}
               </button>
             </div>
           </div>
