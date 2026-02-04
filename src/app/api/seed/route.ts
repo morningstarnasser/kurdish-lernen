@@ -45,6 +45,24 @@ export async function GET() {
       });
     }
 
+    // 2c. Seed third admin user
+    const admin3Email = 'nadyar@kurdish-lernen.com';
+    const admin3Password = 'admin1996';
+    const admin3Name = 'Nadyar';
+
+    const existing3 = await db.execute({
+      sql: 'SELECT id FROM users WHERE email = ?',
+      args: [admin3Email],
+    });
+
+    if (existing3.rows.length === 0) {
+      const hashedPassword3 = await bcrypt.hash(admin3Password, 12);
+      await db.execute({
+        sql: 'INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)',
+        args: [admin3Email, hashedPassword3, admin3Name, 'admin'],
+      });
+    }
+
     // 3. Seed categories
     for (const [id, cat] of Object.entries(CATEGORIES)) {
       if (id === 'all') continue; // skip "all" meta-category
