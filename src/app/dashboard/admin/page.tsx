@@ -95,11 +95,11 @@ export default function AdminPage() {
     checkAuth();
   }, []);
 
-  // Load words from API
+  // Load words from API (cache-bust to always get fresh data in admin)
   const fetchWords = useCallback(async () => {
     setWordsLoading(true);
     try {
-      const res = await fetch("/api/words");
+      const res = await fetch(`/api/words?t=${Date.now()}`);
       if (!res.ok) throw new Error("Fehler beim Laden");
       const data = await res.json();
       setWords(data.words ?? []);
@@ -191,6 +191,7 @@ export default function AdminPage() {
             ku: form.ku.trim(),
             category: form.c,
             note: form.n.trim() || null,
+            is_phrase: editingWord.is_phrase,
           }),
         });
         if (!res.ok) {

@@ -42,8 +42,8 @@ export async function GET(req: NextRequest) {
     }));
 
     const response = NextResponse.json({ words });
-    // Cache on CDN for 5 min, serve stale while revalidating
-    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    // Short CDN cache, allow cache-busting with ?t= param
+    response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
     return response;
   } catch (error) {
     console.error('Words GET error:', error);
@@ -139,7 +139,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const existing = await db.execute({
-      sql: 'SELECT id FROM words WHERE id = ?',
+      sql: 'SELECT id, is_phrase FROM words WHERE id = ?',
       args: [id],
     });
 
@@ -150,10 +150,13 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // Preserve is_phrase if not sent in request
+    const finalIsPhrase = is_phrase ?? existing.rows[0].is_phrase ?? 0;
+
     await db.execute({
       sql: `UPDATE words SET de = ?, ku = ?, category = ?, note = ?, is_phrase = ?
             WHERE id = ?`,
-      args: [de, ku, category, note ?? null, is_phrase ?? 0, id],
+      args: [de, ku, category, note ?? null, finalIsPhrase, id],
     });
 
     return NextResponse.json({
@@ -163,7 +166,7 @@ export async function PUT(req: NextRequest) {
         ku,
         category,
         note: note ?? null,
-        is_phrase: is_phrase ?? 0,
+        is_phrase: finalIsPhrase,
       },
     });
   } catch (error) {
