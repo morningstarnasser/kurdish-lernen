@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     if (error || !code) {
       console.error('Apple auth error:', error);
-      return NextResponse.redirect(`${appUrl}/login?error=apple_auth_failed`);
+      return NextResponse.redirect(`${appUrl}/login?error=apple_auth_failed`, 303);
     }
 
     let email: string | undefined;
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!email) {
-      return NextResponse.redirect(`${appUrl}/login?error=no_email_from_apple`);
+      return NextResponse.redirect(`${appUrl}/login?error=no_email_from_apple`, 303);
     }
 
     // Ensure DB tables exist
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Set cookie and redirect
-    const response = NextResponse.redirect(`${appUrl}/dashboard`);
+    const response = NextResponse.redirect(`${appUrl}/dashboard`, 303);
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -260,6 +260,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (err) {
     console.error('Apple OAuth error:', err);
-    return NextResponse.redirect(`${appUrl}/login?error=server_error`);
+    return NextResponse.redirect(`${appUrl}/login?error=server_error`, 303);
   }
 }
