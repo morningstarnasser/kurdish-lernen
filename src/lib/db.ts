@@ -52,7 +52,8 @@ export async function initDB() {
       ku TEXT NOT NULL,
       category TEXT NOT NULL,
       note TEXT,
-      is_phrase INTEGER DEFAULT 0
+      is_phrase INTEGER DEFAULT 0,
+      UNIQUE(de, ku, category)
     )`,
     `CREATE TABLE IF NOT EXISTS categories (
       id TEXT PRIMARY KEY,

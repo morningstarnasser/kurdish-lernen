@@ -81,13 +81,17 @@ export async function GET() {
       });
     }
 
-    // 5. Seed words
-    for (const word of WORDS) {
-      await db.execute({
-        sql: `INSERT OR IGNORE INTO words (de, ku, category, note, is_phrase)
-              VALUES (?, ?, ?, ?, ?)`,
-        args: [word.de, word.ku, word.c, word.n || null, word.t ? 1 : 0],
-      });
+    // 5. Seed words (batch insert for speed, INSERT OR IGNORE to prevent duplicates)
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < WORDS.length; i += BATCH_SIZE) {
+      const batch = WORDS.slice(i, i + BATCH_SIZE);
+      await db.batch(
+        batch.map((word) => ({
+          sql: `INSERT OR IGNORE INTO words (de, ku, category, note, is_phrase)
+                VALUES (?, ?, ?, ?, ?)`,
+          args: [word.de, word.ku, word.c, word.n || null, word.t ? 1 : 0],
+        }))
+      );
     }
 
     return NextResponse.json({
