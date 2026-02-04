@@ -48,10 +48,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const xpEarned = correct * 10;
     const score = correct; // score = number of correct answers
 
-    // Update or insert user_progress
+    // Update or insert user_progress (level completion)
     await db.execute({
       sql: `INSERT INTO user_progress (user_id, level_id, completed, stars, best_score)
             VALUES (?, ?, 1, ?, ?)
@@ -63,58 +62,10 @@ export async function POST(req: NextRequest) {
       args: [user.id, level_id, stars, score],
     });
 
-    // Handle streak logic
-    const userResult = await db.execute({
-      sql: 'SELECT last_active, streak FROM users WHERE id = ?',
-      args: [user.id],
-    });
-
-    const userData = userResult.rows[0];
-    const lastActive = userData.last_active as string | null;
-    const currentStreak = (userData.streak as number) || 0;
-
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-
-    let newStreak = currentStreak;
-
-    if (lastActive) {
-      const lastDate = new Date(lastActive);
-      const lastDateStr = lastActive.split('T')[0];
-
-      if (lastDateStr === todayStr) {
-        // Same day - streak stays the same
-        newStreak = currentStreak;
-      } else {
-        // Check if last_active was yesterday
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        if (lastDateStr === yesterdayStr) {
-          // Yesterday - increment streak
-          newStreak = currentStreak + 1;
-        } else {
-          // More than one day gap - reset streak
-          newStreak = 1;
-        }
-      }
-    } else {
-      // First activity ever
-      newStreak = 1;
-    }
-
-    // Update user stats
+    // Only update quizzes_played count (XP, correct, wrong are saved per step)
     await db.execute({
-      sql: `UPDATE users SET
-              xp = xp + ?,
-              total_correct = total_correct + ?,
-              total_wrong = total_wrong + ?,
-              quizzes_played = quizzes_played + 1,
-              streak = ?,
-              last_active = ?
-            WHERE id = ?`,
-      args: [xpEarned, correct, wrong, newStreak, todayStr, user.id],
+      sql: `UPDATE users SET quizzes_played = quizzes_played + 1 WHERE id = ?`,
+      args: [user.id],
     });
 
     // Fetch updated user data
@@ -125,8 +76,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       message: 'Fortschritt gespeichert.',
-      xpEarned,
-      streak: newStreak,
       user: updatedUser.rows[0],
     });
   } catch (error) {

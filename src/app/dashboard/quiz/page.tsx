@@ -101,6 +101,26 @@ function QuizContent() {
     setQuestions(generated);
   }, [level, WORDS]);
 
+  // Save single answer progress to DB immediately
+  const saveStepProgress = useCallback(
+    async (isCorrect: boolean) => {
+      try {
+        await fetch("/api/progress/step", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            level_id: levelId,
+            correct: isCorrect ? 1 : 0,
+            wrong: isCorrect ? 0 : 1,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to save step progress:", err);
+      }
+    },
+    [levelId]
+  );
+
   const checkAnswer = useCallback(
     (answer: string) => {
       if (feedback) return;
@@ -135,8 +155,11 @@ function QuizContent() {
       }
 
       setSelectedAnswer(answer);
+
+      // Save progress after every single answer
+      saveStepProgress(isCorrect);
     },
-    [feedback, questions, currentIndex]
+    [feedback, questions, currentIndex, saveStepProgress]
   );
 
   // Auto-advance after feedback
@@ -163,9 +186,9 @@ function QuizContent() {
     return () => clearTimeout(timer);
   }, [feedback, currentIndex, questions.length, hearts]);
 
-  // Save progress on complete
+  // Save level completion progress (on complete or game over)
   useEffect(() => {
-    if (!showComplete || saving) return;
+    if ((!showComplete && !gameOver) || saving) return;
 
     async function saveProgress() {
       setSaving(true);
@@ -192,7 +215,7 @@ function QuizContent() {
     }
 
     saveProgress();
-  }, [showComplete, saving, correctCount, wrongCount, levelId]);
+  }, [showComplete, gameOver, saving, correctCount, wrongCount, levelId]);
 
   function handleTypeinSubmit(e: React.FormEvent) {
     e.preventDefault();
