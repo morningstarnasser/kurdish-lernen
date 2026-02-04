@@ -31,7 +31,17 @@ export async function GET(req: NextRequest) {
 
     const result = await db.execute({ sql, args });
 
-    const response = NextResponse.json({ words: result.rows });
+    // Use compact format to reduce payload size (~225KB -> ~140KB)
+    const words = result.rows.map((r) => ({
+      id: r.id,
+      de: r.de,
+      ku: r.ku,
+      category: r.category,
+      note: r.note || null,
+      is_phrase: r.is_phrase,
+    }));
+
+    const response = NextResponse.json({ words });
     // Cache on CDN for 5 min, serve stale while revalidating
     response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
     return response;
