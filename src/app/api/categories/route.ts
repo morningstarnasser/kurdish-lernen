@@ -7,17 +7,21 @@ import { CATEGORIES } from '@/lib/words';
 export async function GET() {
   try {
     const result = await db.execute({
-      sql: 'SELECT id, label, icon FROM categories',
+      sql: 'SELECT id, label, label_ku, icon FROM categories',
       args: [],
     });
 
     // Start with defaults, override with DB values
-    const categories = { ...CATEGORIES };
+    const categories: Record<string, { label: string; label_ku: string; icon: string }> = {};
+    for (const [key, val] of Object.entries(CATEGORIES)) {
+      categories[key] = { ...val };
+    }
     for (const row of result.rows) {
       const id = row.id as string;
       if (categories[id]) {
         categories[id] = {
           label: row.label as string,
+          label_ku: (row.label_ku as string) || categories[id].label_ku,
           icon: row.icon as string,
         };
       }
@@ -30,7 +34,7 @@ export async function GET() {
   }
 }
 
-// PUT: Update a category label/icon (admin only)
+// PUT: Update a category label/label_ku/icon (admin only)
 export async function PUT(req: NextRequest) {
   try {
     const user = await getUser();
@@ -49,7 +53,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { id, label, icon } = await req.json();
+    const { id, label, label_ku, icon } = await req.json();
 
     if (!id || !label || !icon) {
       return NextResponse.json(
@@ -67,15 +71,15 @@ export async function PUT(req: NextRequest) {
     }
 
     await db.execute({
-      sql: `INSERT INTO categories (id, label, icon, sort_order)
-            VALUES (?, ?, ?, 0)
+      sql: `INSERT INTO categories (id, label, label_ku, icon, sort_order)
+            VALUES (?, ?, ?, ?, 0)
             ON CONFLICT(id)
-            DO UPDATE SET label = excluded.label, icon = excluded.icon`,
-      args: [id, label, icon],
+            DO UPDATE SET label = excluded.label, label_ku = excluded.label_ku, icon = excluded.icon`,
+      args: [id, label, label_ku || '', icon],
     });
 
     return NextResponse.json({
-      category: { id, label, icon },
+      category: { id, label, label_ku: label_ku || '', icon },
     });
   } catch (error) {
     console.error('Categories PUT error:', error);

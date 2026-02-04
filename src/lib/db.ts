@@ -58,6 +58,7 @@ export async function initDB() {
     `CREATE TABLE IF NOT EXISTS categories (
       id TEXT PRIMARY KEY,
       label TEXT NOT NULL,
+      label_ku TEXT DEFAULT '',
       icon TEXT NOT NULL,
       sort_order INTEGER DEFAULT 0
     )`,
@@ -89,4 +90,11 @@ export async function initDB() {
       FOREIGN KEY(user_id) REFERENCES users(id)
     )`,
   ]);
+
+  // Migration: add label_ku column to categories if it doesn't exist
+  try {
+    await client.execute(`ALTER TABLE categories ADD COLUMN label_ku TEXT DEFAULT ''`);
+  } catch {
+    // Column already exists, ignore
+  }
 }

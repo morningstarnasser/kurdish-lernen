@@ -8,6 +8,7 @@ type Tab = "words" | "categories" | "users" | "stats";
 interface CategoryEntry {
   id: string;
   label: string;
+  label_ku: string;
   icon: string;
 }
 
@@ -69,7 +70,7 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<CategoryEntry[]>([]);
   const [catLoading, setCatLoading] = useState(false);
   const [editingCat, setEditingCat] = useState<CategoryEntry | null>(null);
-  const [catForm, setCatForm] = useState({ label: "", icon: "" });
+  const [catForm, setCatForm] = useState({ label: "", label_ku: "", icon: "" });
   const [catSaving, setCatSaving] = useState(false);
 
   // Toast notifications
@@ -130,16 +131,16 @@ export default function AdminPage() {
       const res = await fetch(`/api/categories?t=${Date.now()}`);
       if (!res.ok) throw new Error("Fehler beim Laden");
       const data = await res.json();
-      const cats = data.categories as Record<string, { label: string; icon: string }>;
+      const cats = data.categories as Record<string, { label: string; label_ku: string; icon: string }>;
       setCategories(
         Object.entries(cats)
           .filter(([key]) => key !== "all")
-          .map(([id, val]) => ({ id, label: val.label, icon: val.icon }))
+          .map(([id, val]) => ({ id, label: val.label, label_ku: val.label_ku || "", icon: val.icon }))
       );
     } catch {
       // Fallback to static categories
       setCategories(
-        categoryKeys.map((k) => ({ id: k, label: CATEGORIES[k].label, icon: CATEGORIES[k].icon }))
+        categoryKeys.map((k) => ({ id: k, label: CATEGORIES[k].label, label_ku: CATEGORIES[k].label_ku || "", icon: CATEGORIES[k].icon }))
       );
     } finally {
       setCatLoading(false);
@@ -156,6 +157,7 @@ export default function AdminPage() {
         body: JSON.stringify({
           id: editingCat.id,
           label: catForm.label.trim(),
+          label_ku: catForm.label_ku.trim(),
           icon: catForm.icon.trim(),
         }),
       });
@@ -165,7 +167,7 @@ export default function AdminPage() {
       }
       const data = await res.json();
       setCategories((prev) =>
-        prev.map((c) => (c.id === editingCat.id ? { id: c.id, label: data.category.label, icon: data.category.icon } : c))
+        prev.map((c) => (c.id === editingCat.id ? { id: c.id, label: data.category.label, label_ku: data.category.label_ku || "", icon: data.category.icon } : c))
       );
       setEditingCat(null);
       showToast("Kategorie aktualisiert.", "success");
@@ -784,9 +786,16 @@ export default function AdminPage() {
                             value={catForm.label}
                             onChange={(e) => setCatForm((prev) => ({ ...prev, label: e.target.value }))}
                             className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm outline-none focus:border-[#58CC02]"
-                            placeholder="Label"
+                            placeholder="Deutsch"
                           />
                         </div>
+                        <input
+                          type="text"
+                          value={catForm.label_ku}
+                          onChange={(e) => setCatForm((prev) => ({ ...prev, label_ku: e.target.value }))}
+                          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-[#58CC02] text-sm outline-none focus:border-[#58CC02]"
+                          placeholder="Kurdisch (z.B. Silav)"
+                        />
                         <div className="flex items-center gap-2">
                           <button
                             onClick={handleCatSave}
@@ -809,7 +818,7 @@ export default function AdminPage() {
                       <button
                         onClick={() => {
                           setEditingCat(cat);
-                          setCatForm({ label: cat.label, icon: cat.icon });
+                          setCatForm({ label: cat.label, label_ku: cat.label_ku, icon: cat.icon });
                         }}
                         className="w-full text-left group cursor-pointer bg-transparent border-none p-0"
                       >
@@ -818,6 +827,9 @@ export default function AdminPage() {
                             <span className="text-2xl">{cat.icon}</span>
                             <div>
                               <p className="text-sm font-semibold text-white group-hover:text-[#58CC02] transition-colors">{cat.label}</p>
+                              {cat.label_ku && (
+                                <p className="text-xs text-[#58CC02]/70">{cat.label_ku}</p>
+                              )}
                               <p className="text-[10px] text-gray-600">{cat.id}</p>
                             </div>
                           </div>
