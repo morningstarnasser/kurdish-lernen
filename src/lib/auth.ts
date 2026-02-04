@@ -1,7 +1,9 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+function getSecret() {
+  return new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+}
 
 export interface UserPayload {
   id: number;
@@ -14,12 +16,12 @@ export async function createToken(user: UserPayload): Promise<string> {
   return new SignJWT({ id: user.id, email: user.email, name: user.name, role: user.role })
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('30d')
-    .sign(secret);
+    .sign(getSecret());
 }
 
 export async function verifyToken(token: string): Promise<UserPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as unknown as UserPayload;
   } catch {
     return null;
