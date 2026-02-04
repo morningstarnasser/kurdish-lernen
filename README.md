@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ferheng - Kurdisch Lernen
 
-## Getting Started
+Lerne Kurdisch (Badini) spielerisch mit interaktiven Lektionen, einem umfangreichen Deutsch-Kurdisch Wörterbuch und Fortschrittsverfolgung.
 
-First, run the development server:
+**Live:** [kurdish-lernen.vercel.app](https://kurdish-lernen.vercel.app)
+
+## Features
+
+- **2.300+ Wörter** in 29 Kategorien (Badini-Kurdisch)
+- **Interaktive Quiz-Spiele** mit Multiple-Choice und Texteingabe
+- **31 Lernlevel** vom Anfänger bis zum Meister
+- **Wörterbuch** mit Suchfunktion und Kategoriefiltern
+- **Fortschrittsverfolgung** mit XP, Streaks und Sternen
+- **PWA** - als App auf dem Homescreen installierbar
+- **Mobile-optimiert** mit Bottom-Navigation
+- **Admin-Bereich** zum Verwalten der Wörter (CRUD)
+- **Google & Apple Login** (OAuth 2.0)
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router, Turbopack)
+- **Sprache:** TypeScript
+- **Styling:** Tailwind CSS v4
+- **Datenbank:** Turso (libSQL)
+- **Auth:** JWT (jose) + Google/Apple OAuth
+- **Hosting:** Vercel
+- **PWA:** Service Worker + Web App Manifest
+
+## Kategorien
+
+| Kategorie | Wörter | Kategorie | Wörter |
+|-----------|--------|-----------|--------|
+| Begrüssungen | 25 | Reisen | 83 |
+| Familie | 28 | Gesundheit | 92 |
+| Zahlen | 28 | Bildung | 84 |
+| Farben | 15 | Technologie | 72 |
+| Körper | 26 | Sport | 61 |
+| Natur | 21 | Musik | 53 |
+| Tiere | 23 | Religion | 49 |
+| Essen | 165 | Politik | 45 |
+| Zeit | 88 | Einkaufen | 41 |
+| Verben | 272 | Wetter | 35 |
+| Adjektive | 167 | Kultur | 48 |
+| Grammatik | 107 | Orte | 106 |
+| Haus | 110 | Gefühle | 102 |
+| Kleidung | 86 | Sätze | 163 |
+| Berufe | 107 | | |
+
+## Lokale Entwicklung
 
 ```bash
+# Abhängigkeiten installieren
+npm install
+
+# Umgebungsvariablen konfigurieren
+cp .env.example .env.local
+
+# Entwicklungsserver starten
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Umgebungsvariablen
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+TURSO_DATABASE_URL=libsql://...
+TURSO_AUTH_TOKEN=...
+JWT_SECRET=...
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+APPLE_ID=...
+APPLE_TEAM_ID=...
+APPLE_KEY_ID=...
+APPLE_PRIVATE_KEY=...
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deployment
 
-## Learn More
+Das Projekt wird automatisch über Vercel deployed. Jeder Push auf `main` löst ein neues Deployment aus.
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Lizenz
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

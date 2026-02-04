@@ -54,10 +54,10 @@ export default async function Home() {
           </div>
 
           {/* Tagline */}
-          <p className="animate-fade-in-up text-xl md:text-2xl font-bold text-white/90 drop-shadow mb-4 max-w-xl mx-auto">
+          <p className="animate-fade-in-up text-xl md:text-2xl font-extrabold text-white drop-shadow-lg mb-4 max-w-xl mx-auto">
             Lerne Kurdisch (Badini) spielerisch
           </p>
-          <p className="animate-fade-in-up delay-200 text-base md:text-lg text-white/80 drop-shadow mb-12 max-w-lg mx-auto opacity-0">
+          <p className="animate-fade-in-up delay-200 text-base md:text-lg font-semibold text-white/95 drop-shadow-md mb-12 max-w-lg mx-auto opacity-0">
             Interaktive Lektionen, ein umfangreiches Wörterbuch und
             Fortschrittsverfolgung - alles in einer App.
           </p>
