@@ -31,7 +31,10 @@ export async function GET(req: NextRequest) {
 
     const result = await db.execute({ sql, args });
 
-    return NextResponse.json({ words: result.rows });
+    const response = NextResponse.json({ words: result.rows });
+    // Cache on CDN for 5 min, serve stale while revalidating
+    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    return response;
   } catch (error) {
     console.error('Words GET error:', error);
     return NextResponse.json(

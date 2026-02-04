@@ -1,14 +1,7 @@
-import { getUser } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default async function Home() {
-  const user = await getUser();
-
-  if (user) {
-    redirect("/dashboard");
-  }
-
+// Auth redirect handled by middleware.ts (keeps this page static/cached)
+export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import db, { initDB } from '@/lib/db';
-import { WORDS, CATEGORIES, LEVELS } from '@/lib/words';
+import { WORDS } from '@/lib/words-data';
+import { CATEGORIES, LEVELS } from '@/lib/words';
 
 export async function GET() {
   try {

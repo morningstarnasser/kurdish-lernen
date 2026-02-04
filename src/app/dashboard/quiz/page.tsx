@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LEVELS, WORDS, Word } from "@/lib/words";
+import { LEVELS } from "@/lib/words";
+import type { Word } from "@/lib/words";
+import { useWords } from "@/lib/useWords";
 
 type QuestionType = "multiple" | "typein";
 
@@ -24,6 +26,7 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 function QuizContent() {
+  const { allWords: WORDS, loading: wordsLoading } = useWords();
   const router = useRouter();
   const searchParams = useSearchParams();
   const levelId = Number(searchParams.get("level") ?? 0);
@@ -96,7 +99,7 @@ function QuizContent() {
     });
 
     setQuestions(generated);
-  }, [level]);
+  }, [level, WORDS]);
 
   const checkAnswer = useCallback(
     (answer: string) => {
@@ -415,7 +418,7 @@ function QuizContent() {
   }
 
   // --- LOADING / NO LEVEL ---
-  if (!level || questions.length === 0) {
+  if (!level || questions.length === 0 || wordsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">

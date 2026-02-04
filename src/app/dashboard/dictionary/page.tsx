@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo, useCallback, Fragment } from "react";
-import { WORDS, CATEGORIES } from "@/lib/words";
+import { CATEGORIES } from "@/lib/words";
 import type { Word } from "@/lib/words";
+import { useWords } from "@/lib/useWords";
 
 type Direction = "both" | "de" | "ku";
 
@@ -27,6 +28,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
 }
 
 export default function DictionaryPage() {
+  const { allWords: WORDS, loading: wordsLoading } = useWords();
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState<Direction>("both");
   const [activeCategory, setActiveCategory] = useState("all");
@@ -50,7 +52,7 @@ export default function DictionaryPage() {
     }
 
     return words;
-  }, [search, direction, activeCategory]);
+  }, [search, direction, activeCategory, WORDS]);
 
   const groupedWords = useMemo(() => {
     const groups: Record<string, Word[]> = {};
@@ -199,7 +201,12 @@ export default function DictionaryPage() {
 
       {/* Results */}
       <main className="max-w-5xl mx-auto px-4 py-8">
-        {filteredWords.length === 0 ? (
+        {wordsLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-10 h-10 border-3 border-[#58CC02] border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-gray-500 font-medium">Wörterbuch wird geladen...</p>
+          </div>
+        ) : filteredWords.length === 0 ? (
           /* No Results */
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="text-6xl mb-4">

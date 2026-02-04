@@ -16,7 +16,8 @@ async function seedDatabase() {
     const { initDB } = await import('@/lib/db');
     const db = (await import('@/lib/db')).default;
     const bcrypt = (await import('bcryptjs')).default;
-    const { WORDS, CATEGORIES, LEVELS } = await import('@/lib/words');
+    const { WORDS } = await import('@/lib/words-data');
+    const { CATEGORIES, LEVELS } = await import('@/lib/words');
 
     // 1. Create tables
     console.log('[Ferheng] Initializing database tables...');

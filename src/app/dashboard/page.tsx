@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LEVELS, WORDS, CATEGORIES } from "@/lib/words";
+import { LEVELS, CATEGORIES } from "@/lib/words";
+import { useWords } from "@/lib/useWords";
 
 interface UserData {
   id: number;
@@ -27,6 +28,7 @@ export default function DashboardHome() {
   const [user, setUser] = useState<UserData | null>(null);
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const { totalCount } = useWords();
 
   useEffect(() => {
     async function fetchData() {
@@ -138,7 +140,7 @@ export default function DashboardHome() {
         <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-5 text-center">
           <div className="text-2xl mb-1">📚</div>
           <p className="text-2xl font-extrabold text-[var(--purple)]">
-            {WORDS.length}
+            {totalCount}
           </p>
           <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
             Woerter
