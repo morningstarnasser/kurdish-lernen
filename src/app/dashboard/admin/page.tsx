@@ -3,7 +3,13 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { CATEGORIES } from "@/lib/words";
 
-type Tab = "words" | "users" | "stats";
+type Tab = "words" | "categories" | "users" | "stats";
+
+interface CategoryEntry {
+  id: string;
+  label: string;
+  icon: string;
+}
 
 interface UserData {
   id: number;
@@ -59,6 +65,13 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Categories tab state
+  const [categories, setCategories] = useState<CategoryEntry[]>([]);
+  const [catLoading, setCatLoading] = useState(false);
+  const [editingCat, setEditingCat] = useState<CategoryEntry | null>(null);
+  const [catForm, setCatForm] = useState({ label: "", icon: "" });
+  const [catSaving, setCatSaving] = useState(false);
+
   // Toast notifications
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastIdRef = useRef(0);
@@ -110,11 +123,66 @@ export default function AdminPage() {
     }
   }, [showToast]);
 
+  // Load categories from API
+  const fetchCategories = useCallback(async () => {
+    setCatLoading(true);
+    try {
+      const res = await fetch(`/api/categories?t=${Date.now()}`);
+      if (!res.ok) throw new Error("Fehler beim Laden");
+      const data = await res.json();
+      const cats = data.categories as Record<string, { label: string; icon: string }>;
+      setCategories(
+        Object.entries(cats)
+          .filter(([key]) => key !== "all")
+          .map(([id, val]) => ({ id, label: val.label, icon: val.icon }))
+      );
+    } catch {
+      // Fallback to static categories
+      setCategories(
+        categoryKeys.map((k) => ({ id: k, label: CATEGORIES[k].label, icon: CATEGORIES[k].icon }))
+      );
+    } finally {
+      setCatLoading(false);
+    }
+  }, []);
+
+  const handleCatSave = useCallback(async () => {
+    if (!editingCat || !catForm.label.trim() || !catForm.icon.trim()) return;
+    setCatSaving(true);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingCat.id,
+          label: catForm.label.trim(),
+          icon: catForm.icon.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Fehler beim Speichern");
+      }
+      const data = await res.json();
+      setCategories((prev) =>
+        prev.map((c) => (c.id === editingCat.id ? { id: c.id, label: data.category.label, icon: data.category.icon } : c))
+      );
+      setEditingCat(null);
+      showToast("Kategorie aktualisiert.", "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Fehler beim Speichern.";
+      showToast(msg, "error");
+    } finally {
+      setCatSaving(false);
+    }
+  }, [editingCat, catForm, showToast]);
+
   useEffect(() => {
     if (isAdmin) {
       fetchWords();
+      fetchCategories();
     }
-  }, [isAdmin, fetchWords]);
+  }, [isAdmin, fetchWords, fetchCategories]);
 
   // Filtered words
   const filteredWords = useMemo(() => {
@@ -271,6 +339,15 @@ export default function AdminPage() {
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      ),
+    },
+    {
+      id: "categories",
+      label: "Kategorien",
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
         </svg>
       ),
     },
@@ -664,6 +741,94 @@ export default function AdminPage() {
                     </svg>
                   </button>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* CATEGORIES TAB */}
+        {activeTab === "categories" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white">Kategorien verwalten</h2>
+                <p className="text-sm text-gray-500 mt-1">Klicke auf eine Kategorie, um Label oder Icon zu andern.</p>
+              </div>
+              <span className="text-sm text-gray-500">{categories.length} Kategorien</span>
+            </div>
+
+            {catLoading ? (
+              <div className="flex flex-col items-center gap-3 py-12">
+                <div className="w-8 h-8 border-2 border-[#58CC02] border-t-transparent rounded-full animate-spin" />
+                <p className="text-gray-500 text-sm">Kategorien werden geladen...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {categories.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] transition-all duration-200"
+                  >
+                    {editingCat?.id === cat.id ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={catForm.icon}
+                            onChange={(e) => setCatForm((prev) => ({ ...prev, icon: e.target.value }))}
+                            className="w-16 px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-center text-lg outline-none focus:border-[#58CC02]"
+                            placeholder="Icon"
+                          />
+                          <input
+                            type="text"
+                            value={catForm.label}
+                            onChange={(e) => setCatForm((prev) => ({ ...prev, label: e.target.value }))}
+                            className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm outline-none focus:border-[#58CC02]"
+                            placeholder="Label"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleCatSave}
+                            disabled={catSaving || !catForm.label.trim() || !catForm.icon.trim()}
+                            className="flex-1 px-3 py-1.5 text-xs font-semibold text-white bg-[#58CC02] hover:bg-[#4CAF00] rounded-lg transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+                          >
+                            {catSaving && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                            Speichern
+                          </button>
+                          <button
+                            onClick={() => setEditingCat(null)}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-400 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all"
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-gray-600">ID: {cat.id}</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setEditingCat(cat);
+                          setCatForm({ label: cat.label, icon: cat.icon });
+                        }}
+                        className="w-full text-left group cursor-pointer bg-transparent border-none p-0"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{cat.icon}</span>
+                            <div>
+                              <p className="text-sm font-semibold text-white group-hover:text-[#58CC02] transition-colors">{cat.label}</p>
+                              <p className="text-[10px] text-gray-600">{cat.id}</p>
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
