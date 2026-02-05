@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, Fragment, useEffect } from "react";
 import { CATEGORIES } from "@/lib/words";
 import type { Word } from "@/lib/words";
 import { useWords } from "@/lib/useWords";
+import { Search, X, ArrowRight, ArrowLeftRight, Loader2 } from "lucide-react";
 
 type Direction = "both" | "de" | "ku";
 
@@ -132,19 +133,7 @@ export default function DictionaryPage() {
             {/* Search */}
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg
-                  className="w-5 h-5 text-gray-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
+                <Search className="w-5 h-5 text-gray-500" />
               </div>
               <input
                 type="text"
@@ -158,9 +147,7 @@ export default function DictionaryPage() {
                   onClick={() => setSearch("")}
                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-300 transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -228,26 +215,14 @@ export default function DictionaryPage() {
       <main className="max-w-5xl mx-auto px-4 py-8">
         {wordsLoading ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-10 h-10 border-3 border-[#58CC02] border-t-transparent rounded-full animate-spin mb-4" />
+            <Loader2 className="w-10 h-10 text-[#58CC02] animate-spin mb-4" />
             <p className="text-gray-500 font-medium">Wörterbuch wird geladen...</p>
           </div>
         ) : filteredWords.length === 0 ? (
           /* No Results */
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="text-6xl mb-4">
-              <svg
-                className="w-16 h-16 text-gray-600 mx-auto"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+            <div className="mb-4">
+              <Search className="w-16 h-16 text-gray-600 mx-auto" strokeWidth={1.5} />
             </div>
             <h3 className="text-xl font-bold text-gray-300 mb-2">
               Kein Ergebnis
@@ -336,9 +311,7 @@ export default function DictionaryPage() {
                                 <span className="text-white font-semibold">
                                   {highlightMatch(word.de, search)}
                                 </span>
-                                <span className="text-gray-600 text-sm">
-                                  &rarr;
-                                </span>
+                                <ArrowRight className="w-4 h-4 text-gray-600" />
                                 <span className="text-[#58CC02] font-semibold">
                                   {highlightMatch(word.ku, search)}
                                 </span>
