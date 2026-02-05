@@ -6,6 +6,12 @@ import { LEVELS } from "@/lib/words";
 import type { Word } from "@/lib/words";
 import { useWords } from "@/lib/useWords";
 import { useSounds } from "@/lib/useSounds";
+import {
+  ConfettiAnimation,
+  TrophyAnimation,
+  LevelUpAnimation,
+  SuccessAnimation,
+} from "@/components/LottieAnimations";
 
 interface Question {
   word: Word;
@@ -247,10 +253,13 @@ function QuizContent() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[var(--background)] to-[#f0f0f0] flex items-center justify-center p-4">
         <div className="text-center max-w-md w-full">
-          {/* Broken heart animation */}
+          {/* Broken heart icon with animation */}
           <div className="relative mb-8">
-            <div className="text-8xl animate-bounce" style={{ animationDuration: '2s' }}>
-              💔
+            <div className="w-24 h-24 mx-auto animate-bounce" style={{ animationDuration: '2s' }}>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full text-red-400">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                <path d="M12 4L11 12L13 8L12 21" stroke="white" strokeWidth="2" fill="none"/>
+              </svg>
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-24 h-24 rounded-full bg-red-100 animate-ping opacity-30" />
@@ -260,8 +269,11 @@ function QuizContent() {
           <h1 className="text-3xl font-extrabold text-[var(--gray-600)] mb-2 animate-fade-in-up">
             Nicht aufgeben!
           </h1>
-          <p className="text-[var(--gray-400)] font-semibold mb-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Übung macht den Meister 💪
+          <p className="text-[var(--gray-400)] font-semibold mb-8 animate-fade-in-up flex items-center justify-center gap-2" style={{ animationDelay: '0.1s' }}>
+            Übung macht den Meister
+            <svg className="w-6 h-6 text-[var(--green)]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
           </p>
 
           {/* Stats Card */}
@@ -269,7 +281,9 @@ function QuizContent() {
             <div className="flex justify-around">
               <div className="text-center">
                 <div className="w-14 h-14 mx-auto mb-2 bg-green-100 rounded-2xl flex items-center justify-center">
-                  <span className="text-2xl">✓</span>
+                  <svg className="w-7 h-7 text-[var(--green)]" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
                 <p className="text-2xl font-extrabold text-[var(--green)] tabular-nums">
                   {correctCount}
@@ -281,7 +295,9 @@ function QuizContent() {
               <div className="w-px bg-[var(--border)]" />
               <div className="text-center">
                 <div className="w-14 h-14 mx-auto mb-2 bg-red-100 rounded-2xl flex items-center justify-center">
-                  <span className="text-2xl">✗</span>
+                  <svg className="w-7 h-7 text-[var(--red)]" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </div>
                 <p className="text-2xl font-extrabold text-[var(--red)] tabular-nums">
                   {wrongCount}
@@ -296,14 +312,20 @@ function QuizContent() {
           <div className="flex flex-col gap-3 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             <button
               onClick={handleRetry}
-              className="btn-primary w-full text-lg py-4 hover-scale active-press"
+              className="btn-primary w-full text-lg py-4 hover-scale active-press flex items-center justify-center gap-2"
             >
-              🔄 Nochmal versuchen
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Nochmal versuchen
             </button>
             <button
               onClick={handleClose}
-              className="btn-secondary w-full text-lg py-4 hover-scale active-press"
+              className="btn-secondary w-full text-lg py-4 hover-scale active-press flex items-center justify-center gap-2"
             >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
               Zurück
             </button>
           </div>
@@ -320,41 +342,16 @@ function QuizContent() {
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-[var(--green-bg)] to-[var(--background)] flex items-center justify-center p-4 overflow-hidden">
-        {/* Celebration Overlay - Confetti & Emojis */}
-        <div className="celebration-overlay">
-          {/* Confetti particles */}
-          {[...Array(40)].map((_, i) => (
-            <div
-              key={`confetti-${i}`}
-              className="confetti-particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `-5%`,
-                backgroundColor: ['#4CAF50', '#FFD54F', '#2196F3', '#F44336', '#9C27B0', '#FF9800'][i % 6],
-                animation: `confettiFall ${2.5 + Math.random() * 2}s ease-out forwards`,
-                animationDelay: `${Math.random() * 0.8}s`,
-                transform: `rotate(${Math.random() * 360}deg)`,
-              }}
-            />
-          ))}
-          {/* Floating celebration emojis */}
-          {['🎉', '⭐', '🏆', '✨', '🌟', '💫'].map((emoji, i) => (
-            <div
-              key={`emoji-${i}`}
-              className="absolute text-4xl animate-floating-emoji"
-              style={{
-                left: `${15 + i * 15}%`,
-                bottom: '10%',
-                animationDelay: `${i * 0.2}s`,
-              }}
-            >
-              {emoji}
-            </div>
-          ))}
+        {/* Lottie Confetti Animation - Full Screen */}
+        <div className="fixed inset-0 pointer-events-none z-20">
+          <ConfettiAnimation
+            className="w-full h-full"
+            style={{ position: 'absolute', top: 0, left: 0 }}
+          />
         </div>
 
         <div className="text-center max-w-md w-full relative z-10">
-          {/* Level Up Explosion Effect */}
+          {/* Trophy Animation with Lottie */}
           <div className="relative mb-6">
             {/* Rays behind trophy */}
             <div className="absolute inset-0 flex items-center justify-center">
@@ -366,9 +363,12 @@ function QuizContent() {
                 }}
               />
             </div>
-            {/* Trophy */}
-            <div className="text-9xl animate-level-up relative z-10">
-              🏆
+            {/* Lottie Trophy Animation */}
+            <div className="relative z-10 flex justify-center">
+              <TrophyAnimation
+                className="w-40 h-40"
+                loop={true}
+              />
             </div>
             {/* Burst circles */}
             <div className="absolute inset-0 flex items-center justify-center -z-10">
@@ -383,30 +383,26 @@ function QuizContent() {
             Level geschafft!
           </h1>
           <p className="text-lg text-[var(--gray-500)] font-semibold mb-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            Du bist fantastisch! 🎉
+            Du bist fantastisch!
           </p>
 
-          {/* Stars with sequential animation */}
-          <div className="flex justify-center gap-6 mb-8">
+          {/* Stars with Lottie animations */}
+          <div className="flex justify-center gap-4 mb-8">
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
                 className="relative"
                 style={{ animationDelay: `${0.5 + s * 0.25}s` }}
               >
-                <span
-                  className={`text-6xl block transition-all duration-500 ${
-                    s <= stars
-                      ? "animate-star-pop drop-shadow-[0_0_15px_rgba(255,213,79,0.8)]"
-                      : "opacity-20 grayscale scale-75"
-                  }`}
-                  style={{ animationDelay: `${0.5 + s * 0.25}s` }}
-                >
-                  ⭐
-                </span>
-                {s <= stars && (
-                  <div className="absolute inset-0 flex items-center justify-center animate-celebration-burst" style={{ animationDelay: `${0.6 + s * 0.25}s` }}>
-                    <div className="w-8 h-8 rounded-full bg-[var(--gold)]" />
+                {s <= stars ? (
+                  <div className="w-16 h-16 animate-star-pop drop-shadow-[0_0_15px_rgba(255,213,79,0.8)]">
+                    <TrophyAnimation loop={false} />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 opacity-20 grayscale">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full text-gray-400">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
                   </div>
                 )}
               </div>
@@ -418,17 +414,23 @@ function QuizContent() {
             className="inline-flex items-center gap-3 xp-badge text-2xl rounded-full px-8 py-4 mb-8 animate-level-up-badge"
             style={{ animationDelay: '1s' }}
           >
-            <span className="text-3xl animate-bounce">✨</span>
+            <svg className="w-8 h-8 text-[var(--gold)] animate-bounce" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
             <span className="text-[var(--gray-700)]">+{xpEarned} XP</span>
-            <span className="text-3xl animate-bounce" style={{ animationDelay: '0.1s' }}>✨</span>
+            <svg className="w-8 h-8 text-[var(--gold)] animate-bounce" style={{ animationDelay: '0.1s' }} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
           </div>
 
-          {/* Stats Card - Game style */}
+          {/* Stats Card - Game style with SVG icons */}
           <div className="game-card p-6 mb-8 animate-slide-up" style={{ animationDelay: '0.6s' }}>
             <div className="flex justify-around">
               <div className="text-center group cursor-default tap-feedback">
                 <div className="w-16 h-16 mx-auto mb-2 bg-[var(--green-bg)] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform border-2 border-[var(--green)]/20">
-                  <span className="text-3xl">✓</span>
+                  <svg className="w-8 h-8 text-[var(--green)]" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
                 <p className="text-3xl font-extrabold text-[var(--green)] tabular-nums">
                   {correctCount}
@@ -440,7 +442,9 @@ function QuizContent() {
               <div className="w-px bg-[var(--border)]" />
               <div className="text-center group cursor-default tap-feedback">
                 <div className="w-16 h-16 mx-auto mb-2 bg-red-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform border-2 border-[var(--red)]/20">
-                  <span className="text-3xl">✗</span>
+                  <svg className="w-8 h-8 text-[var(--red)]" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </div>
                 <p className="text-3xl font-extrabold text-[var(--red)] tabular-nums">
                   {wrongCount}
@@ -469,22 +473,12 @@ function QuizContent() {
             className="btn-primary btn-ripple w-full text-lg py-5 tracking-wider animate-fade-in-up"
             style={{ animationDelay: '0.9s' }}
           >
-            Weiter lernen →
+            Weiter lernen
+            <svg className="inline-block ml-2 w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
           </button>
         </div>
-
-        <style jsx>{`
-          @keyframes confettiFall {
-            0% {
-              transform: translateY(0) rotate(0deg);
-              opacity: 1;
-            }
-            100% {
-              transform: translateY(100vh) rotate(720deg);
-              opacity: 0;
-            }
-          }
-        `}</style>
       </div>
     );
   }
@@ -495,7 +489,11 @@ function QuizContent() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[var(--background)] to-[#f0f0f0]">
         <div className="text-center">
           <div className="relative mb-6">
-            <div className="text-7xl animate-bounce">📚</div>
+            <div className="w-20 h-20 mx-auto">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full text-[var(--green)] animate-bounce">
+                <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+              </svg>
+            </div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-20 h-20 rounded-full border-4 border-[var(--green)] border-t-transparent animate-spin" />
             </div>
@@ -515,7 +513,6 @@ function QuizContent() {
   const directionLabel = question.direction === "de_to_ku"
     ? "Übersetze ins Kurdische"
     : "Übersetze ins Deutsche";
-  const directionEmoji = question.direction === "de_to_ku" ? "🇩🇪 → 🟢" : "🟢 → 🇩🇪";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[var(--background)] to-[var(--gray-100)] flex flex-col">
@@ -560,7 +557,9 @@ function QuizContent() {
                 key={h}
                 className={`heart ${h <= hearts ? "active" : "lost"}`}
               >
-                ❤️
+                <svg viewBox="0 0 24 24" fill="currentColor" className={`w-6 h-6 ${h <= hearts ? "text-red-500" : "text-gray-300"}`}>
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
               </span>
             ))}
           </div>
@@ -573,8 +572,32 @@ function QuizContent() {
           {/* Direction label - Badge style */}
           <div className="text-center mb-5 animate-fade-in-down">
             <span className="level-badge inline-flex items-center gap-2 px-5 py-2">
-              <span className="text-base">{directionEmoji}</span>
-              <span className="text-xs font-bold uppercase tracking-wider">
+              {question.direction === "de_to_ku" ? (
+                <>
+                  <span className="w-5 h-4 rounded-sm overflow-hidden flex flex-col">
+                    <span className="flex-1 bg-black" />
+                    <span className="flex-1 bg-red-600" />
+                    <span className="flex-1 bg-yellow-400" />
+                  </span>
+                  <svg className="w-4 h-4 text-[var(--gray-500)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                  <span className="w-5 h-5 rounded-full bg-[var(--green)]" />
+                </>
+              ) : (
+                <>
+                  <span className="w-5 h-5 rounded-full bg-[var(--green)]" />
+                  <svg className="w-4 h-4 text-[var(--gray-500)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                  <span className="w-5 h-4 rounded-sm overflow-hidden flex flex-col">
+                    <span className="flex-1 bg-black" />
+                    <span className="flex-1 bg-red-600" />
+                    <span className="flex-1 bg-yellow-400" />
+                  </span>
+                </>
+              )}
+              <span className="text-xs font-bold uppercase tracking-wider ml-1">
                 {directionLabel}
               </span>
             </span>
@@ -603,7 +626,7 @@ function QuizContent() {
             )}
           </div>
 
-          {/* Feedback Message with XP animation */}
+          {/* Feedback Message with Lottie animation */}
           {feedback && (
             <div
               className={`text-center mb-5 animate-bounce-in ${
@@ -612,7 +635,9 @@ function QuizContent() {
             >
               {feedback === "correct" ? (
                 <div className="flex items-center justify-center gap-3">
-                  <span className="text-4xl animate-bounce">✓</span>
+                  <div className="w-14 h-14">
+                    <SuccessAnimation />
+                  </div>
                   <div>
                     <span className="font-extrabold text-2xl block">Richtig!</span>
                     <span className="xp-badge text-sm px-3 py-1 inline-block mt-1">+10 XP</span>
@@ -621,7 +646,9 @@ function QuizContent() {
               ) : (
                 <div>
                   <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-3xl animate-wrong-shake">✗</span>
+                    <svg className="w-10 h-10 text-[var(--red)] animate-wrong-shake" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                     <span className="font-bold text-xl">Nicht ganz!</span>
                   </div>
                   <p className="text-[var(--gray-600)] font-semibold text-base">
@@ -674,10 +701,14 @@ function QuizContent() {
 
                   {/* Checkmark/X indicator */}
                   {feedback && isCorrectOption && (
-                    <span className="text-[var(--green)] text-3xl animate-bounce-in">✓</span>
+                    <svg className="w-8 h-8 text-[var(--green)] animate-bounce-in" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
                   )}
                   {feedback && isSelected && !isCorrectOption && (
-                    <span className="text-[var(--red)] text-3xl animate-wrong-shake">✗</span>
+                    <svg className="w-8 h-8 text-[var(--red)] animate-wrong-shake" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   )}
                 </button>
               );
@@ -705,7 +736,11 @@ export default function QuizPage() {
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[var(--background)] to-[#f0f0f0]">
           <div className="text-center">
-            <div className="text-6xl mb-4 animate-bounce">📚</div>
+            <div className="w-16 h-16 mx-auto mb-4">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full text-[var(--green)] animate-bounce">
+                <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+              </svg>
+            </div>
             <p className="text-[var(--gray-400)] font-semibold text-lg animate-pulse">
               Quiz wird vorbereitet...
             </p>
