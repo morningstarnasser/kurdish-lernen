@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LEVELS } from "@/lib/words";
+import { LEVELS, CATEGORIES } from "@/lib/words";
 
 interface ProgressEntry {
   level_id: number;
@@ -23,10 +23,17 @@ interface UserData {
   created_at: string;
 }
 
+interface CategoryData {
+  label: string;
+  label_ku: string;
+  icon: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
+  const [categories, setCategories] = useState<Record<string, CategoryData>>(CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -34,9 +41,10 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [meRes, progressRes] = await Promise.all([
+        const [meRes, progressRes, catRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/progress"),
+          fetch("/api/categories"),
         ]);
 
         if (!meRes.ok) {
@@ -46,9 +54,13 @@ export default function ProfilePage() {
 
         const meData = await meRes.json();
         const progressData = await progressRes.json();
+        const catData = await catRes.json();
 
         setUser(meData.user);
         setProgress(progressData.progress || []);
+        if (catData.categories) {
+          setCategories(catData.categories);
+        }
       } catch {
         router.push("/");
       } finally {
@@ -210,6 +222,11 @@ export default function ProfilePage() {
             const p = getLevelProgress(level.id);
             const isCompleted = p?.completed === 1;
             const stars = p?.stars || 0;
+            // Use dynamic category data if available
+            const cat = categories[level.cat];
+            const levelName = cat?.label_ku || level.name;
+            const levelDesc = cat?.label || level.desc;
+            const levelIcon = cat?.icon || level.icon;
 
             return (
               <div
@@ -221,16 +238,16 @@ export default function ProfilePage() {
               >
                 {/* Icon */}
                 <div className="text-2xl w-10 text-center flex-shrink-0">
-                  {level.icon}
+                  {levelIcon}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="font-extrabold text-[var(--gray-600)] text-sm">
-                    {level.name}
+                    {levelName}
                   </p>
                   <p className="text-xs font-medium text-[var(--gray-400)]">
-                    {level.desc}
+                    {levelDesc}
                   </p>
                 </div>
 
