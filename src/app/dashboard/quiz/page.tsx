@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { LEVELS } from "@/lib/words";
 import type { Word } from "@/lib/words";
 import { useWords } from "@/lib/useWords";
+import { useSounds } from "@/lib/useSounds";
 
 type QuestionType = "multiple" | "typein";
 
@@ -30,6 +31,7 @@ function QuizContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const levelId = Number(searchParams.get("level") ?? 0);
+  const { playCorrect, playWrong, playComplete, playStar, initAudio } = useSounds();
 
   const level = LEVELS.find((l) => l.id === levelId);
 
@@ -45,6 +47,21 @@ function QuizContent() {
   const [showComplete, setShowComplete] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Initialize audio on first interaction
+  useEffect(() => {
+    const handleInteraction = () => {
+      initAudio();
+      document.removeEventListener("click", handleInteraction);
+      document.removeEventListener("touchstart", handleInteraction);
+    };
+    document.addEventListener("click", handleInteraction);
+    document.addEventListener("touchstart", handleInteraction);
+    return () => {
+      document.removeEventListener("click", handleInteraction);
+      document.removeEventListener("touchstart", handleInteraction);
+    };
+  }, [initAudio]);
 
   // Generate questions
   useEffect(() => {
@@ -148,10 +165,12 @@ function QuizContent() {
         setFeedback("correct");
         setCorrectCount((c) => c + 1);
         setXpEarned((xp) => xp + 10);
+        playCorrect(); // Play correct sound
       } else {
         setFeedback("wrong");
         setWrongCount((w) => w + 1);
         setHearts((h) => h - 1);
+        playWrong(); // Play wrong sound
       }
 
       setSelectedAnswer(answer);
@@ -159,7 +178,7 @@ function QuizContent() {
       // Save progress after every single answer
       saveStepProgress(isCorrect);
     },
-    [feedback, questions, currentIndex, saveStepProgress]
+    [feedback, questions, currentIndex, saveStepProgress, playCorrect, playWrong]
   );
 
   // Auto-advance after feedback
@@ -189,6 +208,15 @@ function QuizContent() {
   // Save level completion progress (on complete or game over)
   useEffect(() => {
     if ((!showComplete && !gameOver) || saving) return;
+
+    // Play completion sound
+    if (showComplete) {
+      playComplete();
+      // Play star sounds with delay
+      setTimeout(() => playStar(), 300);
+      setTimeout(() => playStar(), 500);
+      setTimeout(() => playStar(), 700);
+    }
 
     async function saveProgress() {
       setSaving(true);
@@ -232,22 +260,19 @@ function QuizContent() {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
         <div className="text-center max-w-md w-full">
-          <div
-            className="text-7xl mb-6"
-            style={{ animation: "bounceIn 0.8s ease-out" }}
-          >
+          <div className="text-7xl mb-6 animate-shake">
             💔
           </div>
-          <h1 className="text-3xl font-extrabold text-[var(--gray-600)] mb-2">
+          <h1 className="text-3xl font-extrabold text-[var(--gray-600)] mb-2 animate-fade-in-up">
             Nicht aufgeben!
           </h1>
-          <p className="text-[var(--gray-400)] font-semibold mb-8">
+          <p className="text-[var(--gray-400)] font-semibold mb-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             Du hast alle Herzen verloren. Probier es nochmal!
           </p>
-          <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-6 mb-8">
+          <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-6 mb-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
             <div className="flex justify-around">
               <div className="text-center">
-                <p className="text-2xl font-extrabold text-[var(--green)]">
+                <p className="text-2xl font-extrabold text-[var(--green)] tabular-nums">
                   {correctCount}
                 </p>
                 <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
@@ -256,7 +281,7 @@ function QuizContent() {
               </div>
               <div className="w-px bg-[var(--border)]" />
               <div className="text-center">
-                <p className="text-2xl font-extrabold text-[var(--red)]">
+                <p className="text-2xl font-extrabold text-[var(--red)] tabular-nums">
                   {wrongCount}
                 </p>
                 <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
@@ -359,30 +384,40 @@ function QuizContent() {
     const stars = pct >= 100 ? 3 : pct >= 80 ? 2 : pct >= 60 ? 1 : 0;
 
     return (
-      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
-        <div className="text-center max-w-md w-full">
-          <div
-            className="text-8xl mb-4"
-            style={{ animation: "bounceIn 0.8s ease-out" }}
-          >
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4 overflow-hidden">
+        {/* Confetti-like celebration dots */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-3 h-3 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                backgroundColor: ['#58CC02', '#FFC800', '#1CB0F6', '#FF4B4B', '#CE82FF'][i % 5],
+                animation: `float ${2 + Math.random() * 2}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 2}s`,
+                opacity: 0.6,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="text-center max-w-md w-full relative z-10">
+          <div className="text-8xl mb-4 animate-tada">
             🏆
           </div>
-          <h1 className="text-3xl font-extrabold text-[var(--gray-600)] mb-2">
+          <h1 className="text-3xl font-extrabold text-[var(--gray-600)] mb-2 animate-fade-in-up">
             Lektion abgeschlossen!
           </h1>
 
           {/* Stars */}
-          <div className="flex justify-center gap-2 mb-4 text-4xl">
+          <div className="flex justify-center gap-3 mb-4 text-5xl">
             {[1, 2, 3].map((s) => (
               <span
                 key={s}
-                className={s <= stars ? "" : "opacity-25"}
-                style={{
-                  animation:
-                    s <= stars
-                      ? `bounceIn 0.5s ease-out ${s * 0.2}s both`
-                      : undefined,
-                }}
+                className={`${s <= stars ? "animate-star-pop" : "opacity-25"}`}
+                style={{ animationDelay: `${s * 0.2}s` }}
               >
                 {s <= stars ? "⭐" : "☆"}
               </span>
@@ -391,17 +426,21 @@ function QuizContent() {
 
           {/* XP */}
           <div
-            className="inline-block bg-[var(--gold)] text-white font-extrabold text-2xl rounded-2xl px-8 py-3 mb-8"
-            style={{ animation: "fadeInUp 0.6s ease-out 0.4s both" }}
+            className="inline-block bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white font-extrabold text-2xl rounded-2xl px-8 py-3 mb-8 animate-bounce-in shadow-lg"
+            style={{ animationDelay: '0.6s' }}
           >
-            +{xpEarned} XP
+            <span className="flex items-center gap-2">
+              <span className="animate-pulse">✨</span>
+              +{xpEarned} XP
+              <span className="animate-pulse">✨</span>
+            </span>
           </div>
 
           {/* Stats */}
-          <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-6 mb-8">
+          <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-6 mb-8 animate-slide-up" style={{ animationDelay: '0.3s' }}>
             <div className="flex justify-around">
-              <div className="text-center">
-                <p className="text-2xl font-extrabold text-[var(--green)]">
+              <div className="text-center group cursor-default">
+                <p className="text-2xl font-extrabold text-[var(--green)] group-hover:scale-110 transition-transform tabular-nums">
                   {correctCount}
                 </p>
                 <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
@@ -409,8 +448,8 @@ function QuizContent() {
                 </p>
               </div>
               <div className="w-px bg-[var(--border)]" />
-              <div className="text-center">
-                <p className="text-2xl font-extrabold text-[var(--red)]">
+              <div className="text-center group cursor-default">
+                <p className="text-2xl font-extrabold text-[var(--red)] group-hover:scale-110 transition-transform tabular-nums">
                   {wrongCount}
                 </p>
                 <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
@@ -418,8 +457,8 @@ function QuizContent() {
                 </p>
               </div>
               <div className="w-px bg-[var(--border)]" />
-              <div className="text-center">
-                <p className="text-2xl font-extrabold text-[var(--blue)]">
+              <div className="text-center group cursor-default">
+                <p className="text-2xl font-extrabold text-[var(--blue)] group-hover:scale-110 transition-transform tabular-nums">
                   {Math.round(pct)}%
                 </p>
                 <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
@@ -431,7 +470,8 @@ function QuizContent() {
 
           <button
             onClick={handleClose}
-            className="btn-primary w-full text-lg py-4 tracking-wider"
+            className="btn-primary w-full text-lg py-4 tracking-wider animate-fade-in-up hover-scale active-press"
+            style={{ animationDelay: '0.5s' }}
           >
             Weiter
           </button>
@@ -445,8 +485,9 @@ function QuizContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <div className="text-5xl mb-4 animate-bounce-in">📝</div>
-          <p className="text-[var(--gray-400)] font-semibold text-lg">
+          <div className="text-6xl mb-4 animate-bounce">📝</div>
+          <div className="w-12 h-12 mx-auto mb-4 spinner-duo" />
+          <p className="text-[var(--gray-400)] font-semibold text-lg animate-pulse">
             Quiz wird geladen...
           </p>
         </div>
@@ -491,9 +532,9 @@ function QuizContent() {
           </button>
 
           {/* Progress Bar */}
-          <div className="flex-1 h-4 bg-[var(--border)] rounded-full overflow-hidden">
+          <div className="flex-1 h-4 bg-[var(--border)] rounded-full overflow-hidden shadow-inner">
             <div
-              className="h-full bg-[var(--green)] rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-gradient-to-r from-[var(--green)] to-[var(--green-light)] rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -503,16 +544,13 @@ function QuizContent() {
             {[1, 2, 3].map((h) => (
               <span
                 key={h}
-                className={
-                  h <= hearts
-                    ? "transition-transform"
-                    : "grayscale opacity-30 transition-all"
-                }
-                style={
-                  h > hearts
-                    ? { filter: "grayscale(1)" }
-                    : undefined
-                }
+                className={`
+                  transition-all duration-300
+                  ${h <= hearts ? "animate-heartbeat" : "grayscale opacity-30 scale-75"}
+                `}
+                style={{
+                  animationDelay: `${h * 0.1}s`,
+                }}
               >
                 ❤️
               </span>
@@ -597,15 +635,15 @@ function QuizContent() {
                   option === question.correctAnswer;
 
                 let buttonStyle =
-                  "bg-white border-2 border-[var(--border)] hover:border-[var(--blue)] hover:bg-blue-50";
+                  "bg-white border-2 border-[var(--border)] hover:border-[var(--blue)] hover:bg-blue-50 hover:-translate-y-0.5 hover:shadow-md";
 
                 if (feedback) {
                   if (isCorrectOption) {
                     buttonStyle =
-                      "bg-[var(--green-bg)] border-2 border-[var(--green)] scale-105";
+                      "bg-[var(--green-bg)] border-2 border-[var(--green)] scale-105 animate-bounce-in";
                   } else if (isSelected && !isCorrectOption) {
                     buttonStyle =
-                      "bg-[#FEE2E2] border-2 border-[var(--red)]";
+                      "bg-[#FEE2E2] border-2 border-[var(--red)] animate-shake";
                   } else {
                     buttonStyle =
                       "bg-white border-2 border-[var(--border)] opacity-50";
@@ -621,8 +659,9 @@ function QuizContent() {
                       ${buttonStyle}
                       rounded-2xl p-4 text-center font-bold text-[var(--gray-600)]
                       transition-all duration-200 cursor-pointer
-                      ${!feedback ? "active:scale-95" : ""}
+                      ${!feedback ? "active:scale-95 active-press" : ""}
                     `}
+                    style={{ animationDelay: `${idx * 0.05}s` }}
                   >
                     {option}
                   </button>
