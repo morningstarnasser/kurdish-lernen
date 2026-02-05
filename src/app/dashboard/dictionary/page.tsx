@@ -6,6 +6,7 @@ import type { Word } from "@/lib/words";
 import { useWords } from "@/lib/useWords";
 import { Search, X, ArrowRight, ArrowLeftRight, Loader2 } from "lucide-react";
 import { CategoryIcon, CATEGORY_COLORS } from "@/components/CategoryIcons";
+import AudioPlayer from "@/components/AudioPlayer";
 
 type Direction = "both" | "de" | "ku";
 
@@ -309,9 +310,14 @@ export default function DictionaryPage() {
                                 <p className="text-xs font-semibold text-[#58CC02]/60 uppercase tracking-wider mb-0.5">
                                   Kurdisch
                                 </p>
-                                <p className="text-[#58CC02] font-medium leading-snug">
-                                  {highlightMatch(word.ku, search)}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-[#58CC02] font-medium leading-snug flex-1">
+                                    {highlightMatch(word.ku, search)}
+                                  </p>
+                                  {word.a && (
+                                    <AudioPlayer audioUrl={word.a} size="sm" />
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ) : (
@@ -324,6 +330,9 @@ export default function DictionaryPage() {
                                 <span className="text-[#58CC02] font-semibold">
                                   {highlightMatch(word.ku, search)}
                                 </span>
+                                {word.a && (
+                                  <AudioPlayer audioUrl={word.a} size="sm" />
+                                )}
                               </div>
                               {word.n && (
                                 <p className="mt-1.5 text-xs text-gray-500 italic">

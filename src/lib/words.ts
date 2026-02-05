@@ -4,6 +4,7 @@ export interface Word {
   c: string;
   n?: string;
   t?: number;
+  a?: string; // audio URL
 }
 
 // DB word type (from API)
@@ -14,6 +15,7 @@ export interface DBWord {
   category: string;
   note: string | null;
   is_phrase: number;
+  audio_url: string | null;
 }
 
 // Convert DB word to Word format
@@ -24,6 +26,7 @@ export function dbWordToWord(w: DBWord): Word {
     c: w.category,
     n: w.note || undefined,
     t: w.is_phrase === 1 ? 1 : undefined,
+    a: w.audio_url || undefined,
   };
 }
 

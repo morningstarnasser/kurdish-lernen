@@ -161,29 +161,34 @@ export default function LearnPage() {
             </button>
           </div>
 
-          {/* XP Progress Bar - Always Visible */}
+          {/* XP Progress Bar - Card Style with nice radius */}
           <div className="mt-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div className="flex items-center justify-between text-sm font-bold mb-2">
-              <span className="flex items-center gap-2">
-                <span className="level-badge bg-white/20 text-white text-xs">
-                  Level {currentRank + 1}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[var(--gold)]/30 rounded-xl flex items-center justify-center">
+                    <Trophy className="w-6 h-6 text-[var(--gold)]" />
+                  </div>
+                  <span className="text-white font-extrabold text-lg">
+                    Level {currentRank + 1}
+                  </span>
+                </div>
+                <span className="bg-[var(--gold)] text-[var(--gray-700)] font-bold text-sm px-4 py-1.5 rounded-xl">
+                  {xpInRank} / {xpForNextRank} XP
                 </span>
-              </span>
-              <span className="xp-badge text-xs px-3 py-1">
-                {xpInRank} / {xpForNextRank} XP
-              </span>
+              </div>
+              <div className="w-full h-4 bg-white/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[var(--gold)] via-[var(--gold-light)] to-[var(--gold)] rounded-full transition-all duration-1000 ease-out progress-bar-shine"
+                  style={{
+                    width: `${(xpInRank / xpForNextRank) * 100}%`,
+                  }}
+                />
+              </div>
+              <p className="text-xs text-white/70 font-semibold mt-2 text-center">
+                Noch {xpForNextRank - xpInRank} XP bis Level {currentRank + 2}
+              </p>
             </div>
-            <div className="w-full h-5 bg-white/20 rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
-              <div
-                className="h-full bg-gradient-to-r from-[var(--gold)] via-[var(--gold-light)] to-[var(--gold)] rounded-full transition-all duration-1000 ease-out progress-bar-shine"
-                style={{
-                  width: `${(xpInRank / xpForNextRank) * 100}%`,
-                }}
-              />
-            </div>
-            <p className="text-xs text-white/60 font-medium mt-1.5 text-right">
-              Noch {xpForNextRank - xpInRank} XP bis Level {currentRank + 2}
-            </p>
           </div>
         </div>
       </div>

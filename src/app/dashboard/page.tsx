@@ -93,7 +93,8 @@ export default function DashboardHome() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-[var(--background)]">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       {/* Welcome Header */}
       <div className="bg-gradient-to-br from-[#0f172a] via-[#1e3a5f] to-[#1a5c2e] rounded-2xl p-8 text-white">
         <h1 className="text-2xl sm:text-3xl font-extrabold mb-2 flex items-center gap-3">
@@ -242,6 +243,7 @@ export default function DashboardHome() {
           </span>
         </button>
       )}
+    </div>
     </div>
   );
 }

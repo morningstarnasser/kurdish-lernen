@@ -128,9 +128,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen bg-[var(--background)] py-6">
       {/* Back Button */}
-      <div className="max-w-2xl mx-auto px-4 pt-4">
+      <div className="max-w-2xl mx-auto px-4">
         <button
           onClick={() => router.push("/dashboard/learn")}
           className="flex items-center gap-2 text-[var(--gray-400)] hover:text-[var(--gray-600)] font-bold transition-colors cursor-pointer"

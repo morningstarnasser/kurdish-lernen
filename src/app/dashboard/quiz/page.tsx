@@ -207,16 +207,23 @@ function QuizContent() {
     return () => clearTimeout(timer);
   }, [feedback, currentIndex, questions.length, hearts]);
 
-  // Save level completion progress
-  useEffect(() => {
-    if ((!showComplete && !gameOver) || saving) return;
+  // Track if completion sound has been played
+  const [soundPlayed, setSoundPlayed] = useState(false);
 
-    if (showComplete) {
+  // Play completion sound only once
+  useEffect(() => {
+    if (showComplete && !soundPlayed) {
+      setSoundPlayed(true);
       playComplete();
       setTimeout(() => playStar(), 300);
       setTimeout(() => playStar(), 500);
       setTimeout(() => playStar(), 700);
     }
+  }, [showComplete, soundPlayed, playComplete, playStar]);
+
+  // Save level completion progress
+  useEffect(() => {
+    if ((!showComplete && !gameOver) || saving) return;
 
     async function saveProgress() {
       setSaving(true);
@@ -260,6 +267,7 @@ function QuizContent() {
     setGameOver(false);
     setShowComplete(false);
     setQuestionKey(0);
+    setSoundPlayed(false);
     setQuestions(generateQuestions());
   }
 
@@ -369,7 +377,7 @@ function QuizContent() {
             <div className="relative z-10 flex justify-center">
               <TrophyAnimation
                 className="w-40 h-40"
-                loop={true}
+                loop={false}
               />
             </div>
             {/* Burst circles */}

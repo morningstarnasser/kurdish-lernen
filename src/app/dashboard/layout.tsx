@@ -15,9 +15,9 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0a0f1a]">
       <Navbar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">{children}</main>
+      <main className="pb-24 md:pb-8">{children}</main>
       <MobileBottomNav />
     </div>
   );

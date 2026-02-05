@@ -97,4 +97,11 @@ export async function initDB() {
   } catch {
     // Column already exists, ignore
   }
+
+  // Migration: add audio_url column to words if it doesn't exist
+  try {
+    await client.execute(`ALTER TABLE words ADD COLUMN audio_url TEXT`);
+  } catch {
+    // Column already exists, ignore
+  }
 }
