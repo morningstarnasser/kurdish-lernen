@@ -73,6 +73,14 @@ export default function AdminPage() {
   const [catForm, setCatForm] = useState({ label: "", label_ku: "", icon: "" });
   const [catSaving, setCatSaving] = useState(false);
 
+  // Users tab state
+  const [users, setUsers] = useState<{id: number; email: string; name: string; role: string; xp: number; streak: number; quizzes_played: number; created_at: string}[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
+  const SUPER_ADMIN_EMAIL = "ali.nasser@bluewin.ch";
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+
   // Toast notifications
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastIdRef = useRef(0);
@@ -179,12 +187,76 @@ export default function AdminPage() {
     }
   }, [editingCat, catForm, showToast]);
 
+  // Load users (super admin only)
+  const fetchUsers = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    setUsersLoading(true);
+    try {
+      const res = await fetch(`/api/users?t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data.users ?? []);
+      }
+    } catch {
+      // Permission denied or error
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [isSuperAdmin]);
+
+  const handleToggleRole = useCallback(async (userId: number, currentRole: string) => {
+    const newRole = currentRole === "admin" ? "user" : "admin";
+    setUpdatingUserId(userId);
+    try {
+      const res = await fetch("/api/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, role: newRole }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Fehler");
+      }
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+      showToast(`Rolle zu ${newRole === "admin" ? "Admin" : "Benutzer"} geändert.`, "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Fehler";
+      showToast(msg, "error");
+    } finally {
+      setUpdatingUserId(null);
+    }
+  }, [showToast]);
+
+  const handleDeleteUser = useCallback(async (userId: number, userName: string) => {
+    if (!confirm(`Benutzer "${userName}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) return;
+    setDeletingUserId(userId);
+    try {
+      const res = await fetch("/api/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Fehler");
+      }
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      showToast("Benutzer gelöscht.", "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Fehler";
+      showToast(msg, "error");
+    } finally {
+      setDeletingUserId(null);
+    }
+  }, [showToast]);
+
   useEffect(() => {
     if (isAdmin) {
       fetchWords();
       fetchCategories();
+      fetchUsers();
     }
-  }, [isAdmin, fetchWords, fetchCategories]);
+  }, [isAdmin, fetchWords, fetchCategories, fetchUsers]);
 
   // Filtered words
   const filteredWords = useMemo(() => {
@@ -848,20 +920,121 @@ export default function AdminPage() {
 
         {/* USERS TAB */}
         {activeTab === "users" && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-20 h-20 bg-white/[0.03] border border-white/[0.06] rounded-2xl flex items-center justify-center mb-6">
-              <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-              </svg>
+          isSuperAdmin ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-white">Benutzerverwaltung</h2>
+                  <p className="text-sm text-gray-500 mt-1">Benutzer verwalten, Rollen zuweisen und Konten löschen.</p>
+                </div>
+                <span className="text-sm text-gray-500">{users.length} Benutzer</span>
+              </div>
+
+              {usersLoading ? (
+                <div className="flex flex-col items-center gap-3 py-12">
+                  <div className="w-8 h-8 border-2 border-[#58CC02] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-gray-500 text-sm">Benutzer werden geladen...</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-white/[0.04]">
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Benutzer</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Rolle</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">XP</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Streak</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Quizze</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Aktionen</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {users.map((u) => {
+                        const isSelf = u.email === user?.email;
+                        const isSuper = u.email === SUPER_ADMIN_EMAIL;
+                        return (
+                          <tr key={u.id} className="bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05] transition-colors">
+                            <td className="px-4 py-3">
+                              <div>
+                                <p className="text-white font-medium">{u.name}</p>
+                                <p className="text-xs text-gray-500">{u.email}</p>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
+                                u.role === "admin"
+                                  ? "bg-[#58CC02]/15 text-[#58CC02] border border-[#58CC02]/30"
+                                  : "bg-white/5 text-gray-400 border border-white/10"
+                              }`}>
+                                {u.role === "admin" ? "👑 Admin" : "👤 Benutzer"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-[#58CC02] font-bold">{u.xp}</td>
+                            <td className="px-4 py-3 text-orange-400 font-bold">🔥 {u.streak}</td>
+                            <td className="px-4 py-3 text-gray-400">{u.quizzes_played}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-2">
+                                {!isSuper && (
+                                  <>
+                                    <button
+                                      onClick={() => handleToggleRole(u.id, u.role)}
+                                      disabled={updatingUserId === u.id}
+                                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                                        u.role === "admin"
+                                          ? "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20"
+                                          : "bg-[#58CC02]/10 text-[#58CC02] hover:bg-[#58CC02]/20"
+                                      } disabled:opacity-50`}
+                                      title={u.role === "admin" ? "Zum Benutzer machen" : "Zum Admin machen"}
+                                    >
+                                      {updatingUserId === u.id ? "..." : u.role === "admin" ? "→ User" : "→ Admin"}
+                                    </button>
+                                    {!isSelf && (
+                                      <button
+                                        onClick={() => handleDeleteUser(u.id, u.name)}
+                                        disabled={deletingUserId === u.id}
+                                        className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-50"
+                                        title="Löschen"
+                                      >
+                                        {deletingUserId === u.id ? (
+                                          <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                                        ) : (
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                          </svg>
+                                        )}
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                                {isSuper && (
+                                  <span className="text-xs text-gray-600 italic">Super-Admin</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Benutzerverwaltung</h2>
-            <p className="text-gray-500 text-center max-w-md">
-              Benutzerverwaltung kommt bald. Hier wirst du Benutzer verwalten, Rollen zuweisen und Aktivitaten einsehen konnen.
-            </p>
-            <div className="mt-6 px-4 py-2 bg-[#58CC02]/10 border border-[#58CC02]/20 rounded-full">
-              <span className="text-sm text-[#58CC02] font-medium">In Entwicklung</span>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-20 h-20 bg-white/[0.03] border border-white/[0.06] rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Benutzerverwaltung</h2>
+              <p className="text-gray-500 text-center max-w-md">
+                Benutzerverwaltung kommt bald. Hier wirst du Benutzer verwalten, Rollen zuweisen und Aktivitäten einsehen können.
+              </p>
+              <div className="mt-6 px-4 py-2 bg-[#58CC02]/10 border border-[#58CC02]/20 rounded-full">
+                <span className="text-sm text-[#58CC02] font-medium">In Entwicklung</span>
+              </div>
             </div>
-          </div>
+          )
         )}
 
         {/* STATS TAB */}
