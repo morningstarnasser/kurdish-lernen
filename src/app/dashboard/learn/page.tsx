@@ -3,6 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LEVELS, CATEGORIES } from "@/lib/words";
+import {
+  Star,
+  Flame,
+  Check,
+  Lock,
+  Play,
+  Sparkles,
+  Trophy,
+  GraduationCap,
+  BookOpen,
+  User,
+} from "lucide-react";
 
 interface ProgressEntry {
   level_id: number;
@@ -103,7 +115,9 @@ export default function LearnPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">📚</div>
+          <div className="w-16 h-16 mx-auto mb-4">
+            <BookOpen className="w-full h-full text-[var(--green)] animate-bounce" />
+          </div>
           <div className="w-12 h-12 mx-auto mb-4 spinner-duo" />
           <p className="text-[var(--gray-400)] font-semibold text-lg animate-pulse">
             Laden...
@@ -119,10 +133,10 @@ export default function LearnPage() {
       <div className="bg-gradient-to-r from-[#2E7D32] via-[var(--green)] to-[#00897B] text-white relative overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-4 left-[10%] text-4xl opacity-25 animate-float" style={{ animationDelay: '0s' }}>✨</div>
-          <div className="absolute top-8 right-[15%] text-3xl opacity-25 animate-float" style={{ animationDelay: '0.5s' }}>🌟</div>
-          <div className="absolute bottom-4 left-[20%] text-2xl opacity-25 animate-float" style={{ animationDelay: '1s' }}>💫</div>
-          <div className="absolute bottom-6 right-[25%] text-3xl opacity-25 animate-float" style={{ animationDelay: '1.5s' }}>⭐</div>
+          <Sparkles className="absolute top-4 left-[10%] w-8 h-8 opacity-25 animate-float" style={{ animationDelay: '0s' }} />
+          <Star className="absolute top-8 right-[15%] w-7 h-7 opacity-25 animate-float" style={{ animationDelay: '0.5s' }} />
+          <Sparkles className="absolute bottom-4 left-[20%] w-6 h-6 opacity-25 animate-float" style={{ animationDelay: '1s' }} />
+          <Star className="absolute bottom-6 right-[25%] w-7 h-7 opacity-25 animate-float fill-white" style={{ animationDelay: '1.5s' }} />
           {/* Decorative circles */}
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10" />
           <div className="absolute -bottom-20 -left-10 w-60 h-60 rounded-full bg-white/5" />
@@ -140,9 +154,9 @@ export default function LearnPage() {
             </div>
             <button
               onClick={() => router.push("/dashboard/profile")}
-              className="w-14 h-14 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center text-2xl transition-all duration-300 cursor-pointer tap-feedback border-2 border-white/20 animate-fade-in-right"
+              className="w-14 h-14 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-300 cursor-pointer tap-feedback border-2 border-white/20 animate-fade-in-right"
             >
-              🧑‍🎓
+              <User className="w-7 h-7 text-white" />
             </button>
           </div>
 
@@ -187,32 +201,31 @@ export default function LearnPage() {
               : "bg-gradient-to-r from-[var(--orange)] to-[var(--red)]"
             }
           `}>
-            <span className="text-4xl animate-streak-flame">🔥</span>
+            <Flame className="w-10 h-10 text-white animate-streak-flame" />
             <div className="flex-1">
               <p className="text-white font-extrabold text-xl leading-tight">
                 {user?.streak} Tage Serie!
               </p>
-              <p className="text-white/80 text-sm font-semibold">
-                {(user?.streak || 0) >= 100
-                  ? "Legendär! Du bist unaufhaltbar! 🏆"
-                  : (user?.streak || 0) >= 30
-                  ? "Einen Monat dabei! Fantastisch! 🌟"
-                  : (user?.streak || 0) >= 7
-                  ? "Eine Woche! Weiter so! 💪"
-                  : "Weiter so, du bist grossartig!"
-                }
+              <p className="text-white/80 text-sm font-semibold flex items-center gap-1">
+                {(user?.streak || 0) >= 100 ? (
+                  <>Legendär! Du bist unaufhaltbar! <Trophy className="w-4 h-4" /></>
+                ) : (user?.streak || 0) >= 30 ? (
+                  <>Einen Monat dabei! Fantastisch! <Star className="w-4 h-4 fill-white" /></>
+                ) : (user?.streak || 0) >= 7 ? (
+                  <>Eine Woche! Weiter so! <Sparkles className="w-4 h-4" /></>
+                ) : (
+                  "Weiter so, du bist grossartig!"
+                )}
               </p>
             </div>
             <div className="flex flex-col items-center">
               <div className="flex gap-0.5">
                 {[...Array(Math.min(user?.streak || 0, 7))].map((_, i) => (
-                  <span
+                  <Flame
                     key={i}
-                    className="text-lg animate-star-pop"
+                    className="w-5 h-5 text-white animate-star-pop"
                     style={{ animationDelay: `${i * 0.08}s` }}
-                  >
-                    🔥
-                  </span>
+                  />
                 ))}
               </div>
               {(user?.streak || 0) > 7 && (
@@ -265,43 +278,21 @@ export default function LearnPage() {
                 {/* Completed badge */}
                 {state === "completed" && (
                   <div className="absolute -top-2.5 -right-2.5 w-8 h-8 bg-[var(--green)] rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-badge-unlock">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
+                    <Check className="w-5 h-5 text-white" strokeWidth={3} />
                   </div>
                 )}
 
                 {/* Lock icon for locked levels */}
                 {state === "locked" && (
                   <div className="absolute -top-2.5 -right-2.5 w-8 h-8 bg-[var(--gray-400)] rounded-full flex items-center justify-center shadow-md border-2 border-white">
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <Lock className="w-4 h-4 text-white" />
                   </div>
                 )}
 
                 {/* Current level indicator - Play button */}
                 {state === "current" && (
                   <div className="absolute -top-2.5 -right-2.5 w-8 h-8 bg-[var(--gold)] rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-heartbeat">
-                    <span className="text-white text-sm ml-0.5">▶</span>
+                    <Play className="w-4 h-4 text-white ml-0.5" fill="white" />
                   </div>
                 )}
 
@@ -343,17 +334,15 @@ export default function LearnPage() {
                   </div>
                 )}
 
-                {/* Stars display - Star style */}
+                {/* Stars display - Lucide Stars */}
                 {state === "completed" && (
                   <div className="star-display mt-3">
                     {[1, 2, 3].map((s) => (
-                      <span
+                      <Star
                         key={s}
-                        className={`star text-xl ${s <= stars ? "earned" : "empty"}`}
+                        className={`w-5 h-5 ${s <= stars ? "text-[#FFD54F] fill-[#FFD54F]" : "text-gray-300"}`}
                         style={{ animationDelay: `${s * 0.15}s` }}
-                      >
-                        ⭐
-                      </span>
+                      />
                     ))}
                   </div>
                 )}
@@ -368,7 +357,7 @@ export default function LearnPage() {
         <div className="game-card p-6 flex items-center justify-around animate-slide-up">
           <div className="text-center group cursor-default tap-feedback">
             <div className="w-14 h-14 mx-auto mb-2 bg-[var(--green-bg)] rounded-2xl flex items-center justify-center border-2 border-[var(--green)]/20 group-hover:scale-110 transition-transform">
-              <span className="text-2xl">⭐</span>
+              <Star className="w-7 h-7 text-[#FFD54F] fill-[#FFD54F]" />
             </div>
             <p className="text-2xl font-extrabold text-[var(--green)] tabular-nums">
               {user?.xp || 0}
@@ -380,7 +369,7 @@ export default function LearnPage() {
           <div className="w-px h-16 bg-[var(--border)]" />
           <div className="text-center group cursor-default tap-feedback">
             <div className="w-14 h-14 mx-auto mb-2 bg-[var(--orange)]/10 rounded-2xl flex items-center justify-center border-2 border-[var(--orange)]/20 group-hover:scale-110 transition-transform">
-              <span className="text-2xl group-hover:animate-streak-flame">🔥</span>
+              <Flame className="w-7 h-7 text-[var(--orange)] group-hover:animate-streak-flame" />
             </div>
             <p className="text-2xl font-extrabold text-[var(--orange)] tabular-nums">
               {user?.streak || 0}
@@ -392,7 +381,7 @@ export default function LearnPage() {
           <div className="w-px h-16 bg-[var(--border)]" />
           <div className="text-center group cursor-default tap-feedback">
             <div className="w-14 h-14 mx-auto mb-2 bg-[var(--blue)]/10 rounded-2xl flex items-center justify-center border-2 border-[var(--blue)]/20 group-hover:scale-110 transition-transform">
-              <span className="text-2xl">✓</span>
+              <Check className="w-7 h-7 text-[var(--blue)]" strokeWidth={3} />
             </div>
             <p className="text-2xl font-extrabold text-[var(--blue)] tabular-nums">
               {progress.filter((p) => p.completed === 1).length}
