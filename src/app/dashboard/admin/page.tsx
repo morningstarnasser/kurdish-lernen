@@ -78,6 +78,10 @@ export default function AdminPage() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<{id: number; email: string; name: string; role: string} | null>(null);
+  const [userForm, setUserForm] = useState({ name: "", email: "", password: "", role: "user" });
+  const [userSaving, setUserSaving] = useState(false);
   const SUPER_ADMIN_EMAIL = "ali.nasser@bluewin.ch";
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
@@ -249,6 +253,79 @@ export default function AdminPage() {
       setDeletingUserId(null);
     }
   }, [showToast]);
+
+  const openAddUserModal = useCallback(() => {
+    setUserForm({ name: "", email: "", password: "", role: "user" });
+    setEditingUser(null);
+    setShowUserModal(true);
+  }, []);
+
+  const openEditUserModal = useCallback((u: {id: number; email: string; name: string; role: string}) => {
+    setUserForm({ name: u.name, email: u.email, password: "", role: u.role });
+    setEditingUser(u);
+    setShowUserModal(true);
+  }, []);
+
+  const closeUserModal = useCallback(() => {
+    setShowUserModal(false);
+    setEditingUser(null);
+    setUserForm({ name: "", email: "", password: "", role: "user" });
+  }, []);
+
+  const handleUserSave = useCallback(async () => {
+    if (!userForm.name.trim() || !userForm.email.trim()) return;
+    if (!editingUser && !userForm.password.trim()) return; // Password required for new users
+
+    setUserSaving(true);
+    try {
+      if (editingUser) {
+        // Update existing user
+        const body: Record<string, string | number> = { userId: editingUser.id };
+        if (userForm.name !== editingUser.name) body.name = userForm.name.trim();
+        if (userForm.email !== editingUser.email) body.email = userForm.email.trim();
+        if (userForm.role !== editingUser.role) body.role = userForm.role;
+        if (userForm.password.trim()) body.password = userForm.password;
+
+        const res = await fetch("/api/users", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Fehler beim Speichern");
+        }
+        const data = await res.json();
+        setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, ...data.user } : u)));
+        showToast("Benutzer aktualisiert.", "success");
+      } else {
+        // Create new user
+        const res = await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: userForm.name.trim(),
+            email: userForm.email.trim(),
+            password: userForm.password,
+            role: userForm.role,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Fehler beim Erstellen");
+        }
+        const data = await res.json();
+        setUsers((prev) => [data.user, ...prev]);
+        showToast("Benutzer erstellt.", "success");
+      }
+      closeUserModal();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Ein Fehler ist aufgetreten.";
+      showToast(msg, "error");
+    } finally {
+      setUserSaving(false);
+    }
+  }, [userForm, editingUser, closeUserModal, showToast]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -927,7 +1004,18 @@ export default function AdminPage() {
                   <h2 className="text-lg font-bold text-white">Benutzerverwaltung</h2>
                   <p className="text-sm text-gray-500 mt-1">Benutzer verwalten, Rollen zuweisen und Konten löschen.</p>
                 </div>
-                <span className="text-sm text-gray-500">{users.length} Benutzer</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500">{users.length} Benutzer</span>
+                  <button
+                    onClick={openAddUserModal}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#58CC02] hover:bg-[#4CAF00] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-lg shadow-[#58CC02]/20"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Neuer Benutzer
+                  </button>
+                </div>
               </div>
 
               {usersLoading ? (
@@ -976,6 +1064,15 @@ export default function AdminPage() {
                               <div className="flex items-center justify-end gap-2">
                                 {!isSuper && (
                                   <>
+                                    <button
+                                      onClick={() => openEditUserModal(u)}
+                                      className="p-1.5 rounded-lg text-gray-500 hover:text-[#1CB0F6] hover:bg-[#1CB0F6]/10 transition-all"
+                                      title="Bearbeiten"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                    </button>
                                     <button
                                       onClick={() => handleToggleRole(u.id, u.role)}
                                       disabled={updatingUserId === u.id}
@@ -1234,6 +1331,134 @@ export default function AdminPage() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 )}
                 {editingWord !== null ? "Speichern" : "Hinzufugen"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Add/Edit Modal */}
+      {showUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={closeUserModal}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-[#111827] border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+              <h3 className="text-lg font-bold text-white">
+                {editingUser ? "Benutzer bearbeiten" : "Neuen Benutzer erstellen"}
+              </h3>
+              <button
+                onClick={closeUserModal}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-150"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={userForm.name}
+                  onChange={(e) => setUserForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Max Mustermann"
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 text-sm outline-none transition-all duration-200 focus:border-[#58CC02] focus:ring-2 focus:ring-[#58CC02]/20"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  E-Mail
+                </label>
+                <input
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => setUserForm((prev) => ({ ...prev, email: e.target.value }))}
+                  placeholder="max@beispiel.de"
+                  disabled={editingUser?.email === SUPER_ADMIN_EMAIL}
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 text-sm outline-none transition-all duration-200 focus:border-[#58CC02] focus:ring-2 focus:ring-[#58CC02]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Passwort {editingUser && <span className="text-gray-600 normal-case">(leer lassen, um es nicht zu ändern)</span>}
+                </label>
+                <input
+                  type="password"
+                  value={userForm.password}
+                  onChange={(e) => setUserForm((prev) => ({ ...prev, password: e.target.value }))}
+                  placeholder={editingUser ? "••••••••" : "Mindestens 6 Zeichen"}
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 text-sm outline-none transition-all duration-200 focus:border-[#58CC02] focus:ring-2 focus:ring-[#58CC02]/20"
+                />
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Rolle
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setUserForm((prev) => ({ ...prev, role: "user" }))}
+                    disabled={editingUser?.email === SUPER_ADMIN_EMAIL}
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 border ${
+                      userForm.role === "user"
+                        ? "bg-white/10 border-white/20 text-white"
+                        : "bg-white/5 border-white/10 text-gray-500 hover:text-gray-300"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    👤 Benutzer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserForm((prev) => ({ ...prev, role: "admin" }))}
+                    disabled={editingUser?.email === SUPER_ADMIN_EMAIL}
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 border ${
+                      userForm.role === "admin"
+                        ? "bg-[#58CC02]/15 border-[#58CC02]/30 text-[#58CC02]"
+                        : "bg-white/5 border-white/10 text-gray-500 hover:text-gray-300"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    👑 Admin
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.06] bg-white/[0.02]">
+              <button
+                onClick={closeUserModal}
+                className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all duration-200"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleUserSave}
+                disabled={!userForm.name.trim() || !userForm.email.trim() || (!editingUser && !userForm.password.trim()) || userSaving}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-[#58CC02] hover:bg-[#4CAF00] rounded-xl shadow-lg shadow-[#58CC02]/20 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#58CC02] flex items-center gap-2"
+              >
+                {userSaving && (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+                {editingUser ? "Speichern" : "Erstellen"}
               </button>
             </div>
           </div>
