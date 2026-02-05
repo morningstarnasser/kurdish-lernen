@@ -4,6 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LEVELS, CATEGORIES } from "@/lib/words";
 import { useWords } from "@/lib/useWords";
+import {
+  Flame,
+  Star,
+  GraduationCap,
+  BookOpen,
+  PlayCircle,
+  BarChart3,
+  Settings,
+  Loader2,
+  Hand,
+} from "lucide-react";
+import { CategoryIcon, CATEGORY_COLORS } from "@/components/CategoryIcons";
 
 interface UserData {
   id: number;
@@ -73,9 +85,7 @@ export default function DashboardHome() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="text-5xl mb-4" style={{ animation: "bounceIn 0.6s ease-out" }}>
-            📚
-          </div>
+          <Loader2 className="w-16 h-16 text-[var(--green)] mx-auto mb-4 animate-spin" />
           <p className="text-[var(--gray-400)] font-semibold">Laden...</p>
         </div>
       </div>
@@ -86,11 +96,12 @@ export default function DashboardHome() {
     <div className="space-y-6">
       {/* Welcome Header */}
       <div className="bg-gradient-to-br from-[#0f172a] via-[#1e3a5f] to-[#1a5c2e] rounded-2xl p-8 text-white">
-        <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">
-          Silav, {user?.name || "Lernender"}! 👋
+        <h1 className="text-2xl sm:text-3xl font-extrabold mb-2 flex items-center gap-3">
+          Silav, {user?.name || "Lernender"}!
+          <Hand className="w-8 h-8 text-[#FFD54F]" />
         </h1>
         <p className="text-white/70 font-medium">
-          Willkommen bei Ferheng. Lerne Kurdisch (Badini) Schritt fuer Schritt.
+          Willkommen bei Ferheng. Lerne Kurdisch (Badini) Schritt für Schritt.
         </p>
 
         {/* XP Bar */}
@@ -111,7 +122,9 @@ export default function DashboardHome() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-5 text-center">
-          <div className="text-2xl mb-1">🔥</div>
+          <div className="w-10 h-10 mx-auto mb-2 bg-[var(--orange)]/10 rounded-xl flex items-center justify-center">
+            <Flame className="w-6 h-6 text-[var(--orange)]" />
+          </div>
           <p className="text-2xl font-extrabold text-[var(--gold)]">
             {user?.streak || 0}
           </p>
@@ -120,7 +133,9 @@ export default function DashboardHome() {
           </p>
         </div>
         <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-5 text-center">
-          <div className="text-2xl mb-1">⭐</div>
+          <div className="w-10 h-10 mx-auto mb-2 bg-[var(--green-bg)] rounded-xl flex items-center justify-center">
+            <Star className="w-6 h-6 text-[#FFD54F] fill-[#FFD54F]" />
+          </div>
           <p className="text-2xl font-extrabold text-[var(--green)]">
             {user?.xp || 0}
           </p>
@@ -129,7 +144,9 @@ export default function DashboardHome() {
           </p>
         </div>
         <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-5 text-center">
-          <div className="text-2xl mb-1">📝</div>
+          <div className="w-10 h-10 mx-auto mb-2 bg-[var(--blue)]/10 rounded-xl flex items-center justify-center">
+            <GraduationCap className="w-6 h-6 text-[var(--blue)]" />
+          </div>
           <p className="text-2xl font-extrabold text-[var(--blue)]">
             {completedLevels}
           </p>
@@ -138,12 +155,14 @@ export default function DashboardHome() {
           </p>
         </div>
         <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-5 text-center">
-          <div className="text-2xl mb-1">📚</div>
-          <p className="text-2xl font-extrabold text-[var(--purple)]">
+          <div className="w-10 h-10 mx-auto mb-2 bg-purple-100 rounded-xl flex items-center justify-center">
+            <BookOpen className="w-6 h-6 text-purple-600" />
+          </div>
+          <p className="text-2xl font-extrabold text-purple-600">
             {totalCount}
           </p>
           <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
-            Woerter
+            Wörter
           </p>
         </div>
       </div>
@@ -159,8 +178,16 @@ export default function DashboardHome() {
           }
           className="bg-[var(--green)] text-white rounded-2xl p-6 text-left shadow-[0_4px_0_var(--green-dark)] active:shadow-none active:translate-y-1 transition-all cursor-pointer hover:brightness-105"
         >
-          <div className="text-3xl mb-2">
-            {nextLevel?.icon || "🎮"}
+          <div className="w-12 h-12 mb-3 bg-white/20 rounded-xl flex items-center justify-center">
+            {nextLevel ? (
+              <CategoryIcon
+                category={nextLevel.cat}
+                levelId={nextLevel.id}
+                className="w-7 h-7 text-white"
+              />
+            ) : (
+              <PlayCircle className="w-7 h-7 text-white" />
+            )}
           </div>
           <h3 className="text-lg font-extrabold mb-1">Weiterlernen</h3>
           <p className="text-white/80 text-sm font-medium">
@@ -175,9 +202,11 @@ export default function DashboardHome() {
           onClick={() => router.push("/dashboard/dictionary")}
           className="bg-white border-2 border-[var(--border)] rounded-2xl p-6 text-left hover:border-[var(--blue)] hover:shadow-lg transition-all cursor-pointer"
         >
-          <div className="text-3xl mb-2">📖</div>
+          <div className="w-12 h-12 mb-3 bg-[var(--blue)]/10 rounded-xl flex items-center justify-center">
+            <BookOpen className="w-7 h-7 text-[var(--blue)]" />
+          </div>
           <h3 className="text-lg font-extrabold text-[var(--gray-600)] mb-1">
-            Woerterbuch
+            Wörterbuch
           </h3>
           <p className="text-[var(--gray-400)] text-sm font-medium">
             {Object.keys(CATEGORIES).length - 1} Kategorien durchsuchen
@@ -189,7 +218,9 @@ export default function DashboardHome() {
           onClick={() => router.push("/dashboard/profile")}
           className="bg-white border-2 border-[var(--border)] rounded-2xl p-6 text-left hover:border-[var(--gold)] hover:shadow-lg transition-all cursor-pointer"
         >
-          <div className="text-3xl mb-2">📊</div>
+          <div className="w-12 h-12 mb-3 bg-[var(--gold)]/10 rounded-xl flex items-center justify-center">
+            <BarChart3 className="w-7 h-7 text-[var(--gold)]" />
+          </div>
           <h3 className="text-lg font-extrabold text-[var(--gray-600)] mb-1">
             Mein Fortschritt
           </h3>
@@ -203,10 +234,11 @@ export default function DashboardHome() {
       {user?.role === "admin" && (
         <button
           onClick={() => router.push("/dashboard/admin")}
-          className="w-full bg-[var(--gray-100)] border-2 border-[var(--border)] rounded-2xl p-4 text-center hover:bg-[var(--gray-200)] transition-all cursor-pointer"
+          className="w-full bg-[var(--gray-100)] border-2 border-[var(--border)] rounded-2xl p-4 text-center hover:bg-[var(--gray-200)] transition-all cursor-pointer flex items-center justify-center gap-2"
         >
+          <Settings className="w-5 h-5 text-[var(--gray-500)]" />
           <span className="font-bold text-[var(--gray-500)]">
-            ⚙️ Admin-Bereich
+            Admin-Bereich
           </span>
         </button>
       )}

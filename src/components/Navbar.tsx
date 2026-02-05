@@ -3,6 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import {
+  BookOpen,
+  Gamepad2,
+  User,
+  Flame,
+  Star,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
 
 interface User {
   id: number;
@@ -45,9 +55,9 @@ export default function Navbar() {
   }
 
   const navLinks = [
-    { href: "/dashboard/dictionary", label: "Wörterbuch", icon: "\uD83D\uDCDA" },
-    { href: "/dashboard/learn", label: "Lernen", icon: "\uD83C\uDFAE" },
-    { href: "/dashboard/profile", label: "Profil", icon: "\uD83D\uDC64" },
+    { href: "/dashboard/dictionary", label: "Wörterbuch", icon: BookOpen },
+    { href: "/dashboard/learn", label: "Lernen", icon: Gamepad2 },
+    { href: "/dashboard/profile", label: "Profil", icon: User },
   ];
 
   function isActive(href: string) {
@@ -65,20 +75,23 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`no-underline flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  isActive(link.href)
-                    ? "bg-green-bg text-green-dark border-2 border-green/30"
-                    : "text-[var(--gray-400)] hover:bg-[var(--gray-50)] hover:text-[var(--gray-600)] border-2 border-transparent"
-                }`}
-              >
-                <span className="text-lg">{link.icon}</span>
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`no-underline flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
+                    isActive(link.href)
+                      ? "bg-green-bg text-green-dark border-2 border-green/30"
+                      : "text-[var(--gray-400)] hover:bg-[var(--gray-50)] hover:text-[var(--gray-600)] border-2 border-transparent"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Stats + Logout (Desktop) */}
@@ -87,9 +100,7 @@ export default function Navbar() {
               <div className="flex items-center gap-4">
                 {/* Streak */}
                 <div className="flex items-center gap-1.5 bg-[var(--gold)]/10 px-3 py-1.5 rounded-xl">
-                  <span className="text-lg" title="Streak">
-                    &#x1F525;
-                  </span>
+                  <Flame className="w-5 h-5 text-[var(--orange)]" />
                   <span className="text-sm font-extrabold text-[var(--gold-dark)]">
                     {user.streak || 0}
                   </span>
@@ -97,9 +108,7 @@ export default function Navbar() {
 
                 {/* XP */}
                 <div className="flex items-center gap-1.5 bg-[var(--blue)]/10 px-3 py-1.5 rounded-xl">
-                  <span className="text-lg" title="XP">
-                    &#x2B50;
-                  </span>
+                  <Star className="w-5 h-5 text-[#FFD54F] fill-[#FFD54F]" />
                   <span className="text-sm font-extrabold text-[var(--blue-dark)]">
                     {user.xp || 0} XP
                   </span>
@@ -111,8 +120,9 @@ export default function Navbar() {
             <button
               onClick={handleLogout}
               disabled={loggingOut}
-              className="px-4 py-2 rounded-xl text-sm font-bold text-[var(--gray-400)] hover:bg-[var(--red)]/10 hover:text-[var(--red)] border-2 border-transparent hover:border-[var(--red)]/20 transition-all duration-200 cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-[var(--gray-400)] hover:bg-[var(--red)]/10 hover:text-[var(--red)] border-2 border-transparent hover:border-[var(--red)]/20 transition-all duration-200 cursor-pointer disabled:opacity-50"
             >
+              <LogOut className="w-4 h-4" />
               {loggingOut ? "..." : "Abmelden"}
             </button>
           </div>
@@ -120,24 +130,14 @@ export default function Navbar() {
           {/* Mobile Hamburger */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden flex flex-col gap-1.5 p-2 rounded-xl hover:bg-[var(--gray-50)] transition-colors cursor-pointer border-none bg-transparent"
+            className="md:hidden p-2 rounded-xl hover:bg-[var(--gray-50)] transition-colors cursor-pointer border-none bg-transparent"
             aria-label="Menü öffnen"
           >
-            <span
-              className={`block w-6 h-0.5 bg-[var(--gray-500)] rounded-full transition-all duration-300 ${
-                menuOpen ? "rotate-45 translate-y-2" : ""
-              }`}
-            />
-            <span
-              className={`block w-6 h-0.5 bg-[var(--gray-500)] rounded-full transition-all duration-300 ${
-                menuOpen ? "opacity-0" : ""
-              }`}
-            />
-            <span
-              className={`block w-6 h-0.5 bg-[var(--gray-500)] rounded-full transition-all duration-300 ${
-                menuOpen ? "-rotate-45 -translate-y-2" : ""
-              }`}
-            />
+            {menuOpen ? (
+              <X className="w-6 h-6 text-[var(--gray-500)]" />
+            ) : (
+              <Menu className="w-6 h-6 text-[var(--gray-500)]" />
+            )}
           </button>
         </div>
       </div>
@@ -153,13 +153,13 @@ export default function Navbar() {
           {user && (
             <div className="flex items-center gap-3 pb-3 mb-2 border-b-2 border-[var(--border)]">
               <div className="flex items-center gap-1.5 bg-[var(--gold)]/10 px-3 py-1.5 rounded-xl">
-                <span className="text-lg">&#x1F525;</span>
+                <Flame className="w-5 h-5 text-[var(--orange)]" />
                 <span className="text-sm font-extrabold text-[var(--gold-dark)]">
                   {user.streak || 0}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 bg-[var(--blue)]/10 px-3 py-1.5 rounded-xl">
-                <span className="text-lg">&#x2B50;</span>
+                <Star className="w-5 h-5 text-[#FFD54F] fill-[#FFD54F]" />
                 <span className="text-sm font-extrabold text-[var(--blue-dark)]">
                   {user.xp || 0} XP
                 </span>
@@ -171,21 +171,24 @@ export default function Navbar() {
           )}
 
           {/* Nav Links (mobile) */}
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className={`no-underline flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 ${
-                isActive(link.href)
-                  ? "bg-green-bg text-green-dark"
-                  : "text-[var(--gray-500)] hover:bg-[var(--gray-50)]"
-              }`}
-            >
-              <span className="text-xl">{link.icon}</span>
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className={`no-underline flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-200 ${
+                  isActive(link.href)
+                    ? "bg-green-bg text-green-dark"
+                    : "text-[var(--gray-500)] hover:bg-[var(--gray-50)]"
+                }`}
+              >
+                <Icon className="w-6 h-6" />
+                {link.label}
+              </Link>
+            );
+          })}
 
           {/* Logout (mobile) */}
           <button
@@ -193,7 +196,7 @@ export default function Navbar() {
             disabled={loggingOut}
             className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-[var(--red)] hover:bg-[var(--red)]/10 transition-all duration-200 cursor-pointer border-none bg-transparent text-left disabled:opacity-50"
           >
-            <span className="text-xl">&#x1F6AA;</span>
+            <LogOut className="w-6 h-6" />
             {loggingOut ? "Wird abgemeldet..." : "Abmelden"}
           </button>
         </div>
