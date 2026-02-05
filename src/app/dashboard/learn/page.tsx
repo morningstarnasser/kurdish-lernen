@@ -22,18 +22,26 @@ interface UserData {
   quizzes_played: number;
 }
 
+interface CategoryData {
+  label: string;
+  label_ku: string;
+  icon: string;
+}
+
 export default function LearnPage() {
   const router = useRouter();
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
   const [user, setUser] = useState<UserData | null>(null);
+  const [categories, setCategories] = useState<Record<string, CategoryData>>(CATEGORIES);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [meRes, progressRes] = await Promise.all([
+        const [meRes, progressRes, catRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/progress"),
+          fetch("/api/categories"),
         ]);
 
         if (!meRes.ok) {
@@ -43,9 +51,13 @@ export default function LearnPage() {
 
         const meData = await meRes.json();
         const progressData = await progressRes.json();
+        const catData = await catRes.json();
 
         setUser(meData.user);
         setProgress(progressData.progress || []);
+        if (catData.categories) {
+          setCategories(catData.categories);
+        }
       } catch {
         router.push("/");
       } finally {
@@ -171,6 +183,11 @@ export default function LearnPage() {
             const state = getLevelState(level.id);
             const p = getLevelProgress(level.id);
             const stars = p?.stars || 0;
+            // Use dynamic category data if available
+            const cat = categories[level.cat];
+            const levelName = cat?.label_ku || level.name;
+            const levelDesc = cat?.label || level.desc;
+            const levelIcon = cat?.icon || level.icon;
 
             return (
               <button
@@ -232,21 +249,21 @@ export default function LearnPage() {
                 )}
 
                 {/* Level icon */}
-                <div className="text-4xl mb-2">{level.icon}</div>
+                <div className="text-4xl mb-2">{levelIcon}</div>
 
                 {/* Level number */}
                 <p className="text-xs font-bold text-[var(--gray-300)] uppercase tracking-wider">
                   Level {level.id + 1}
                 </p>
 
-                {/* Level name */}
+                {/* Level name (Kurdish) */}
                 <h3 className="text-base font-extrabold text-[var(--gray-600)] mt-0.5 leading-tight">
-                  {level.name}
+                  {levelName}
                 </h3>
 
-                {/* Description */}
+                {/* Description (German) */}
                 <p className="text-xs font-semibold text-[var(--gray-400)] mt-1">
-                  {level.desc}
+                  {levelDesc}
                 </p>
 
                 {/* Progress bar for current level */}

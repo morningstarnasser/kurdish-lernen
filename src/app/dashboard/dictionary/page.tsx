@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useMemo, useCallback, Fragment } from "react";
+import { useState, useMemo, useCallback, Fragment, useEffect } from "react";
 import { CATEGORIES } from "@/lib/words";
 import type { Word } from "@/lib/words";
 import { useWords } from "@/lib/useWords";
 
 type Direction = "both" | "de" | "ku";
+
+interface CategoryData {
+  label: string;
+  label_ku: string;
+  icon: string;
+}
 
 function highlightMatch(text: string, query: string): React.ReactNode {
   if (!query.trim()) return text;
@@ -32,6 +38,25 @@ export default function DictionaryPage() {
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState<Direction>("both");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [categories, setCategories] = useState<Record<string, CategoryData>>(CATEGORIES);
+
+  // Load dynamic categories from API
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const res = await fetch("/api/categories");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.categories) {
+            setCategories(data.categories);
+          }
+        }
+      } catch {
+        // Fallback to static categories
+      }
+    }
+    fetchCategories();
+  }, []);
 
   const filteredWords = useMemo(() => {
     let words = WORDS;
@@ -63,7 +88,7 @@ export default function DictionaryPage() {
     return groups;
   }, [filteredWords]);
 
-  const categoryKeys = Object.keys(CATEGORIES);
+  const categoryKeys = Object.keys(categories);
 
   const directionButtons: { value: Direction; label: string }[] = [
     { value: "both", label: "\u2194 Beide" },
@@ -161,7 +186,7 @@ export default function DictionaryPage() {
           {/* Category Pills */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
             {categoryKeys.map((key) => {
-              const cat = CATEGORIES[key];
+              const cat = categories[key];
               const isActive = activeCategory === key;
               return (
                 <button
@@ -248,7 +273,7 @@ export default function DictionaryPage() {
           /* Grouped Word Cards */
           <div className="space-y-10">
             {Object.entries(groupedWords).map(([catKey, words]) => {
-              const cat = CATEGORIES[catKey];
+              const cat = categories[catKey];
               if (!cat) return null;
               return (
                 <section key={catKey}>
@@ -257,6 +282,11 @@ export default function DictionaryPage() {
                     <h2 className="text-xl font-bold text-white">
                       {cat.label}
                     </h2>
+                    {cat.label_ku && (
+                      <span className="text-sm text-[#58CC02]/70 font-medium">
+                        ({cat.label_ku})
+                      </span>
+                    )}
                     <span className="ml-2 text-xs font-semibold text-gray-500 bg-white/5 px-2.5 py-1 rounded-full">
                       {words.length}
                     </span>
