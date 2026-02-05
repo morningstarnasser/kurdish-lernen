@@ -12,6 +12,7 @@ import {
   LevelUpAnimation,
   SuccessAnimation,
 } from "@/components/LottieAnimations";
+import { KurdishFlag, GermanFlag } from "@/components/KurdishFlag";
 
 interface Question {
   word: Word;
@@ -576,63 +577,19 @@ function QuizContent() {
             <span className="level-badge inline-flex items-center gap-2 px-5 py-2">
               {question.direction === "de_to_ku" ? (
                 <>
-                  {/* Deutsche Flagge */}
-                  <span className="w-6 h-4 rounded-sm overflow-hidden flex flex-col shadow-sm">
-                    <span className="flex-1 bg-black" />
-                    <span className="flex-1 bg-red-600" />
-                    <span className="flex-1 bg-yellow-400" />
-                  </span>
+                  <GermanFlag className="w-6 h-4" />
                   <svg className="w-4 h-4 text-[var(--gray-500)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
-                  {/* Kurdische Flagge */}
-                  <svg className="w-6 h-4 rounded-sm shadow-sm" viewBox="0 0 30 20">
-                    <rect width="30" height="6.67" fill="#ED1C24" />
-                    <rect y="6.67" width="30" height="6.67" fill="#FFFFFF" />
-                    <rect y="13.33" width="30" height="6.67" fill="#21A038" />
-                    <circle cx="15" cy="10" r="4" fill="#FECB00" />
-                    {[...Array(21)].map((_, i) => (
-                      <line
-                        key={i}
-                        x1="15"
-                        y1="10"
-                        x2={15 + Math.cos((i * 360 / 21) * Math.PI / 180) * 6}
-                        y2={10 + Math.sin((i * 360 / 21) * Math.PI / 180) * 6}
-                        stroke="#FECB00"
-                        strokeWidth="0.8"
-                      />
-                    ))}
-                  </svg>
+                  <KurdishFlag className="w-6 h-4" />
                 </>
               ) : (
                 <>
-                  {/* Kurdische Flagge */}
-                  <svg className="w-6 h-4 rounded-sm shadow-sm" viewBox="0 0 30 20">
-                    <rect width="30" height="6.67" fill="#ED1C24" />
-                    <rect y="6.67" width="30" height="6.67" fill="#FFFFFF" />
-                    <rect y="13.33" width="30" height="6.67" fill="#21A038" />
-                    <circle cx="15" cy="10" r="4" fill="#FECB00" />
-                    {[...Array(21)].map((_, i) => (
-                      <line
-                        key={i}
-                        x1="15"
-                        y1="10"
-                        x2={15 + Math.cos((i * 360 / 21) * Math.PI / 180) * 6}
-                        y2={10 + Math.sin((i * 360 / 21) * Math.PI / 180) * 6}
-                        stroke="#FECB00"
-                        strokeWidth="0.8"
-                      />
-                    ))}
-                  </svg>
+                  <KurdishFlag className="w-6 h-4" />
                   <svg className="w-4 h-4 text-[var(--gray-500)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
-                  {/* Deutsche Flagge */}
-                  <span className="w-6 h-4 rounded-sm overflow-hidden flex flex-col shadow-sm">
-                    <span className="flex-1 bg-black" />
-                    <span className="flex-1 bg-red-600" />
-                    <span className="flex-1 bg-yellow-400" />
-                  </span>
+                  <GermanFlag className="w-6 h-4" />
                 </>
               )}
               <span className="text-xs font-bold uppercase tracking-wider ml-1">
