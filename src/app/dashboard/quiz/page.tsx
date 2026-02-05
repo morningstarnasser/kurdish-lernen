@@ -90,7 +90,8 @@ function QuizContent() {
         ? [...WORDS]
         : WORDS.filter((w) => w.c === level.cat);
 
-    const selectedWords = shuffleArray(categoryWords).slice(0, level.count);
+    // Use ALL words from the category, shuffled
+    const selectedWords = shuffleArray(categoryWords);
     const allCategoryWords =
       categoryWords.length >= 4 ? categoryWords : [...WORDS];
 

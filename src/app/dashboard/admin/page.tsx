@@ -45,8 +45,6 @@ const emptyForm: WordForm = { de: "", ku: "", c: "greetings", n: "" };
 
 const WORDS_PER_PAGE = 50;
 
-const categoryKeys = Object.keys(CATEGORIES).filter((k) => k !== "all");
-
 export default function AdminPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,8 +68,12 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<CategoryEntry[]>([]);
   const [catLoading, setCatLoading] = useState(false);
   const [editingCat, setEditingCat] = useState<CategoryEntry | null>(null);
-  const [catForm, setCatForm] = useState({ label: "", label_ku: "", icon: "" });
+  const [catForm, setCatForm] = useState({ id: "", label: "", label_ku: "", icon: "" });
   const [catSaving, setCatSaving] = useState(false);
+  const [showNewCatModal, setShowNewCatModal] = useState(false);
+  const [newCatForm, setNewCatForm] = useState({ id: "", label: "", label_ku: "", icon: "" });
+  const [newCatSaving, setNewCatSaving] = useState(false);
+  const [deletingCatId, setDeletingCatId] = useState<string | null>(null);
 
   // Users tab state
   const [users, setUsers] = useState<{id: number; email: string; name: string; role: string; xp: number; streak: number; quizzes_played: number; created_at: string}[]>([]);
@@ -152,7 +154,9 @@ export default function AdminPage() {
     } catch {
       // Fallback to static categories
       setCategories(
-        categoryKeys.map((k) => ({ id: k, label: CATEGORIES[k].label, label_ku: CATEGORIES[k].label_ku || "", icon: CATEGORIES[k].icon }))
+        Object.entries(CATEGORIES)
+          .filter(([key]) => key !== "all")
+          .map(([id, val]) => ({ id, label: val.label, label_ku: val.label_ku || "", icon: val.icon }))
       );
     } finally {
       setCatLoading(false);
@@ -190,6 +194,62 @@ export default function AdminPage() {
       setCatSaving(false);
     }
   }, [editingCat, catForm, showToast]);
+
+  // Create new category
+  const handleNewCatSave = useCallback(async () => {
+    if (!newCatForm.id.trim() || !newCatForm.label.trim() || !newCatForm.icon.trim()) return;
+    setNewCatSaving(true);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: newCatForm.id.trim().toLowerCase(),
+          label: newCatForm.label.trim(),
+          label_ku: newCatForm.label_ku.trim(),
+          icon: newCatForm.icon.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Fehler beim Erstellen");
+      }
+      const data = await res.json();
+      setCategories((prev) => [...prev, { id: data.category.id, label: data.category.label, label_ku: data.category.label_ku || "", icon: data.category.icon }]);
+      setShowNewCatModal(false);
+      setNewCatForm({ id: "", label: "", label_ku: "", icon: "" });
+      showToast("Kategorie erstellt.", "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Fehler beim Erstellen.";
+      showToast(msg, "error");
+    } finally {
+      setNewCatSaving(false);
+    }
+  }, [newCatForm, showToast]);
+
+  // Delete category
+  const handleDeleteCat = useCallback(async (catId: string) => {
+    if (!confirm("Kategorie wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.")) return;
+    setDeletingCatId(catId);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: catId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Fehler beim Löschen");
+      }
+      setCategories((prev) => prev.filter((c) => c.id !== catId));
+      showToast("Kategorie gelöscht.", "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Fehler beim Löschen.";
+      showToast(msg, "error");
+    } finally {
+      setDeletingCatId(null);
+    }
+  }, [showToast]);
 
   // Load users (super admin only)
   const fetchUsers = useCallback(async () => {
@@ -692,9 +752,9 @@ export default function AdminPage() {
                   className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm outline-none transition-all duration-200 focus:border-[#58CC02] focus:ring-2 focus:ring-[#58CC02]/20 appearance-none cursor-pointer"
                 >
                   <option value="all" className="bg-[#0a0f1a]">Alle Kategorien</option>
-                  {categoryKeys.map((key) => (
-                    <option key={key} value={key} className="bg-[#0a0f1a]">
-                      {CATEGORIES[key].icon} {CATEGORIES[key].label}
+                  {categories.filter(c => c.id !== "all").map((cat) => (
+                    <option key={cat.id} value={cat.id} className="bg-[#0a0f1a]">
+                      {cat.icon} {cat.label}
                     </option>
                   ))}
                 </select>
@@ -718,7 +778,7 @@ export default function AdminPage() {
                 <span className="text-[#58CC02] font-bold">{filteredWords.length}</span>{" "}
                 {filteredWords.length === 1 ? "Wort" : "Worter"}
                 {filterCategory !== "all" && (
-                  <> in <span className="text-white font-medium">{CATEGORIES[filterCategory]?.label}</span></>
+                  <> in <span className="text-white font-medium">{categories.find(c => c.id === filterCategory)?.label || filterCategory}</span></>
                 )}
                 {filteredWords.length > WORDS_PER_PAGE && (
                   <span className="text-gray-600">
@@ -900,12 +960,23 @@ export default function AdminPage() {
         {/* CATEGORIES TAB */}
         {activeTab === "categories" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h2 className="text-lg font-bold text-white">Kategorien verwalten</h2>
-                <p className="text-sm text-gray-500 mt-1">Klicke auf eine Kategorie, um Label oder Icon zu andern.</p>
+                <p className="text-sm text-gray-500 mt-1">Klicke auf eine Kategorie, um Label oder Icon zu ändern.</p>
               </div>
-              <span className="text-sm text-gray-500">{categories.length} Kategorien</span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-500">{categories.length} Kategorien</span>
+                <button
+                  onClick={() => setShowNewCatModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#58CC02] hover:bg-[#4CAF00] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-lg shadow-[#58CC02]/20"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Neue Kategorie
+                </button>
+              </div>
             </div>
 
             {catLoading ? (
@@ -954,6 +1025,23 @@ export default function AdminPage() {
                             {catSaving && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                             Speichern
                           </button>
+                          {/* Delete button for custom categories (not in CATEGORIES) */}
+                          {!CATEGORIES[cat.id] && (
+                            <button
+                              onClick={() => handleDeleteCat(cat.id)}
+                              disabled={deletingCatId === cat.id}
+                              className="p-1.5 text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-all disabled:opacity-50"
+                              title="Kategorie löschen"
+                            >
+                              {deletingCatId === cat.id ? (
+                                <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              )}
+                            </button>
+                          )}
                           <button
                             onClick={() => setEditingCat(null)}
                             className="px-3 py-1.5 text-xs font-medium text-gray-400 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all"
@@ -967,7 +1055,7 @@ export default function AdminPage() {
                       <button
                         onClick={() => {
                           setEditingCat(cat);
-                          setCatForm({ label: cat.label, label_ku: cat.label_ku, icon: cat.icon });
+                          setCatForm({ id: cat.id, label: cat.label, label_ku: cat.label_ku, icon: cat.icon });
                         }}
                         className="w-full text-left group cursor-pointer bg-transparent border-none p-0"
                       >
@@ -1168,7 +1256,7 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Kategorien</p>
-                    <p className="text-2xl font-extrabold text-white">{categoryKeys.length}</p>
+                    <p className="text-2xl font-extrabold text-white">{categories.length}</p>
                   </div>
                 </div>
               </div>
@@ -1193,13 +1281,12 @@ export default function AdminPage() {
             <div>
               <h3 className="text-lg font-bold text-white mb-4">Worter pro Kategorie</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {categoryKeys.map((key) => {
-                  const cat = CATEGORIES[key];
-                  const count = categoryStats[key] || 0;
+                {categories.filter((c) => c.id !== "all").map((cat) => {
+                  const count = categoryStats[cat.id] || 0;
                   const percentage = words.length > 0 ? Math.round((count / words.length) * 100) : 0;
                   return (
                     <div
-                      key={key}
+                      key={cat.id}
                       className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] transition-all duration-200"
                     >
                       <div className="flex items-center justify-between mb-3">
@@ -1291,9 +1378,9 @@ export default function AdminPage() {
                   onChange={(e) => handleFormChange("c", e.target.value)}
                   className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm outline-none transition-all duration-200 focus:border-[#58CC02] focus:ring-2 focus:ring-[#58CC02]/20 appearance-none cursor-pointer"
                 >
-                  {categoryKeys.map((key) => (
-                    <option key={key} value={key} className="bg-[#111827]">
-                      {CATEGORIES[key].icon} {CATEGORIES[key].label}
+                  {categories.filter((c) => c.id !== "all").map((cat) => (
+                    <option key={cat.id} value={cat.id} className="bg-[#111827]">
+                      {cat.icon} {cat.label}
                     </option>
                   ))}
                 </select>
@@ -1459,6 +1546,117 @@ export default function AdminPage() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 )}
                 {editingUser ? "Speichern" : "Erstellen"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Category Modal */}
+      {showNewCatModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowNewCatModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-[#111827] border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+              <h3 className="text-lg font-bold text-white">
+                Neue Kategorie erstellen
+              </h3>
+              <button
+                onClick={() => setShowNewCatModal(false)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-150"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="px-6 py-5 space-y-4">
+              {/* ID */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  ID <span className="text-gray-600 normal-case">(Kleinbuchstaben, keine Leerzeichen)</span>
+                </label>
+                <input
+                  type="text"
+                  value={newCatForm.id}
+                  onChange={(e) => setNewCatForm((prev) => ({ ...prev, id: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") }))}
+                  placeholder="z.B. hobbies"
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 text-sm outline-none transition-all duration-200 focus:border-[#58CC02] focus:ring-2 focus:ring-[#58CC02]/20"
+                />
+              </div>
+
+              {/* Icon */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Icon <span className="text-gray-600 normal-case">(Emoji)</span>
+                </label>
+                <input
+                  type="text"
+                  value={newCatForm.icon}
+                  onChange={(e) => setNewCatForm((prev) => ({ ...prev, icon: e.target.value }))}
+                  placeholder="z.B. 🎨"
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 text-lg outline-none transition-all duration-200 focus:border-[#58CC02] focus:ring-2 focus:ring-[#58CC02]/20"
+                />
+              </div>
+
+              {/* Label (German) */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Name (Deutsch)
+                </label>
+                <input
+                  type="text"
+                  value={newCatForm.label}
+                  onChange={(e) => setNewCatForm((prev) => ({ ...prev, label: e.target.value }))}
+                  placeholder="z.B. Hobbies"
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 text-sm outline-none transition-all duration-200 focus:border-[#58CC02] focus:ring-2 focus:ring-[#58CC02]/20"
+                />
+              </div>
+
+              {/* Label Kurdish */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Name (Kurdisch) <span className="text-gray-600 normal-case">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={newCatForm.label_ku}
+                  onChange={(e) => setNewCatForm((prev) => ({ ...prev, label_ku: e.target.value }))}
+                  placeholder="z.B. Hobî"
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[#58CC02] placeholder-gray-600 text-sm outline-none transition-all duration-200 focus:border-[#58CC02] focus:ring-2 focus:ring-[#58CC02]/20"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.06] bg-white/[0.02]">
+              <button
+                onClick={() => {
+                  setShowNewCatModal(false);
+                  setNewCatForm({ id: "", label: "", label_ku: "", icon: "" });
+                }}
+                className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all duration-200"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleNewCatSave}
+                disabled={!newCatForm.id.trim() || !newCatForm.label.trim() || !newCatForm.icon.trim() || newCatSaving}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-[#58CC02] hover:bg-[#4CAF00] rounded-xl shadow-lg shadow-[#58CC02]/20 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#58CC02] flex items-center gap-2"
+              >
+                {newCatSaving && (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+                Kategorie erstellen
               </button>
             </div>
           </div>
