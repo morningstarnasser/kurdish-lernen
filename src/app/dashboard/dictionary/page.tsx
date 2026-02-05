@@ -5,6 +5,7 @@ import { CATEGORIES } from "@/lib/words";
 import type { Word } from "@/lib/words";
 import { useWords } from "@/lib/useWords";
 import { Search, X, ArrowRight, ArrowLeftRight, Loader2 } from "lucide-react";
+import { CategoryIcon, CATEGORY_COLORS } from "@/components/CategoryIcons";
 
 type Direction = "both" | "de" | "ku";
 
@@ -185,7 +186,11 @@ export default function DictionaryPage() {
                       : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200 border border-white/5"
                   }`}
                 >
-                  <span className="text-base">{cat.icon}</span>
+                  <CategoryIcon
+                    category={key}
+                    className={isActive ? "text-white" : CATEGORY_COLORS[key] || "text-gray-400"}
+                    size={18}
+                  />
                   <span>{cat.label}</span>
                 </button>
               );
@@ -253,7 +258,11 @@ export default function DictionaryPage() {
               return (
                 <section key={catKey}>
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="text-2xl">{cat.icon}</span>
+                    <CategoryIcon
+                      category={catKey}
+                      className={CATEGORY_COLORS[catKey] || "text-[#58CC02]"}
+                      size={28}
+                    />
                     <h2 className="text-xl font-bold text-white">
                       {cat.label}
                     </h2>

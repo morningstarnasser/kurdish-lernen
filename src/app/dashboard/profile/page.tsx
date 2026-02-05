@@ -3,6 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LEVELS, CATEGORIES } from "@/lib/words";
+import {
+  Star,
+  Flame,
+  FileText,
+  Target,
+  Check,
+  ChevronLeft,
+  User,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+import { CategoryIcon, CATEGORY_COLORS } from "@/components/CategoryIcons";
 
 interface ProgressEntry {
   level_id: number;
@@ -106,7 +118,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <div className="text-5xl mb-4 animate-bounce-in">🧑‍🎓</div>
+          <Loader2 className="w-16 h-16 text-[var(--green)] mx-auto mb-4 animate-spin" />
           <p className="text-[var(--gray-400)] font-semibold text-lg">
             Profil laden...
           </p>
@@ -123,27 +135,17 @@ export default function ProfilePage() {
           onClick={() => router.push("/dashboard/learn")}
           className="flex items-center gap-2 text-[var(--gray-400)] hover:text-[var(--gray-600)] font-bold transition-colors cursor-pointer"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Zuruck
+          <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+          Zurück
         </button>
       </div>
 
       {/* Profile Card */}
       <div className="max-w-2xl mx-auto px-4 pt-4">
         <div className="bg-gradient-to-br from-[#0f172a] via-[#1e3a5f] to-[#1a5c2e] rounded-2xl p-8 text-white text-center shadow-xl">
-          <div className="text-6xl mb-3">🧑‍🎓</div>
+          <div className="w-20 h-20 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
+            <User className="w-12 h-12 text-white" />
+          </div>
           <h1 className="text-2xl font-extrabold">
             {user?.name || "Lernender"}
           </h1>
@@ -168,7 +170,9 @@ export default function ProfilePage() {
         <div className="grid grid-cols-2 gap-4">
           {/* XP */}
           <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-5">
-            <div className="text-3xl mb-2">⭐</div>
+            <div className="w-12 h-12 mx-auto mb-2 bg-[var(--green-bg)] rounded-xl flex items-center justify-center">
+              <Star className="w-7 h-7 text-[#FFD54F] fill-[#FFD54F]" />
+            </div>
             <p className="text-2xl font-extrabold text-[var(--green)]">
               {user?.xp || 0}
             </p>
@@ -179,7 +183,9 @@ export default function ProfilePage() {
 
           {/* Streak */}
           <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-5">
-            <div className="text-3xl mb-2">🔥</div>
+            <div className="w-12 h-12 mx-auto mb-2 bg-[var(--orange)]/10 rounded-xl flex items-center justify-center">
+              <Flame className="w-7 h-7 text-[var(--orange)]" />
+            </div>
             <p className="text-2xl font-extrabold text-[var(--gold)]">
               {user?.streak || 0}
             </p>
@@ -190,7 +196,9 @@ export default function ProfilePage() {
 
           {/* Quizzes */}
           <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-5">
-            <div className="text-3xl mb-2">📝</div>
+            <div className="w-12 h-12 mx-auto mb-2 bg-[var(--blue)]/10 rounded-xl flex items-center justify-center">
+              <FileText className="w-7 h-7 text-[var(--blue)]" />
+            </div>
             <p className="text-2xl font-extrabold text-[var(--blue)]">
               {user?.quizzes_played || 0}
             </p>
@@ -201,7 +209,9 @@ export default function ProfilePage() {
 
           {/* Accuracy */}
           <div className="bg-white rounded-2xl border-2 border-[var(--border)] p-5">
-            <div className="text-3xl mb-2">🎯</div>
+            <div className="w-12 h-12 mx-auto mb-2 bg-[#FF9500]/10 rounded-xl flex items-center justify-center">
+              <Target className="w-7 h-7 text-[#FF9500]" />
+            </div>
             <p className="text-2xl font-extrabold text-[#FF9500]">
               {accuracy}%
             </p>
@@ -221,12 +231,11 @@ export default function ProfilePage() {
           {LEVELS.map((level, idx) => {
             const p = getLevelProgress(level.id);
             const isCompleted = p?.completed === 1;
-            const stars = p?.stars || 0;
+            const starCount = p?.stars || 0;
             // Use dynamic category data if available
             const cat = categories[level.cat];
             const levelName = cat?.label_ku || level.name;
             const levelDesc = cat?.label || level.desc;
-            const levelIcon = cat?.icon || level.icon;
 
             return (
               <div
@@ -237,8 +246,12 @@ export default function ProfilePage() {
                 `}
               >
                 {/* Icon */}
-                <div className="text-2xl w-10 text-center flex-shrink-0">
-                  {levelIcon}
+                <div className="w-10 flex-shrink-0 flex justify-center">
+                  <CategoryIcon
+                    category={level.cat}
+                    levelId={level.id}
+                    className={`w-7 h-7 ${isCompleted ? CATEGORY_COLORS[level.cat] || "text-[var(--green)]" : "text-gray-400"}`}
+                  />
                 </div>
 
                 {/* Info */}
@@ -255,30 +268,16 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {isCompleted ? (
                     <>
-                      <div className="flex gap-0.5 text-sm">
+                      <div className="flex gap-0.5">
                         {[1, 2, 3].map((s) => (
-                          <span
+                          <Star
                             key={s}
-                            className={s <= stars ? "" : "opacity-25"}
-                          >
-                            {s <= stars ? "⭐" : "☆"}
-                          </span>
+                            className={`w-4 h-4 ${s <= starCount ? "text-[#FFD54F] fill-[#FFD54F]" : "text-gray-300"}`}
+                          />
                         ))}
                       </div>
                       <div className="w-6 h-6 bg-[var(--green)] rounded-full flex items-center justify-center">
-                        <svg
-                          className="w-3.5 h-3.5 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
+                        <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
                       </div>
                     </>
                   ) : (
@@ -298,15 +297,16 @@ export default function ProfilePage() {
         {!showResetConfirm ? (
           <button
             onClick={() => setShowResetConfirm(true)}
-            className="w-full bg-white rounded-2xl border-2 border-[var(--border)] p-4 text-center font-bold text-[var(--red)] hover:bg-[#FEE2E2] hover:border-[var(--red)] transition-all cursor-pointer"
+            className="w-full bg-white rounded-2xl border-2 border-[var(--border)] p-4 text-center font-bold text-[var(--red)] hover:bg-[#FEE2E2] hover:border-[var(--red)] transition-all cursor-pointer flex items-center justify-center gap-2"
           >
-            Fortschritt zurucksetzen
+            <Trash2 className="w-5 h-5" />
+            Fortschritt zurücksetzen
           </button>
         ) : (
           <div className="bg-[#FEE2E2] rounded-2xl border-2 border-[var(--red)] p-6">
             <p className="text-center font-bold text-[var(--red-dark)] mb-4">
               Bist du sicher? Dein gesamter Fortschritt wird unwiderruflich
-              geloscht.
+              gelöscht.
             </p>
             <div className="flex gap-3">
               <button
@@ -318,9 +318,16 @@ export default function ProfilePage() {
               <button
                 onClick={handleResetProgress}
                 disabled={resetting}
-                className="flex-1 bg-[var(--red)] text-white font-bold rounded-2xl py-3 px-4 hover:bg-[var(--red-dark)] transition-colors shadow-[0_4px_0_var(--red-dark)] active:shadow-none active:translate-y-1 cursor-pointer disabled:opacity-50"
+                className="flex-1 bg-[var(--red)] text-white font-bold rounded-2xl py-3 px-4 hover:bg-[var(--red-dark)] transition-colors shadow-[0_4px_0_var(--red-dark)] active:shadow-none active:translate-y-1 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {resetting ? "Wird geloscht..." : "Ja, loschen"}
+                {resetting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Wird gelöscht...
+                  </>
+                ) : (
+                  "Ja, löschen"
+                )}
               </button>
             </div>
           </div>

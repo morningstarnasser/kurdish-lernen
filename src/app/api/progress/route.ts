@@ -28,6 +28,45 @@ export async function GET() {
   }
 }
 
+export async function DELETE() {
+  try {
+    const user = await getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Nicht authentifiziert.' },
+        { status: 401 }
+      );
+    }
+
+    // Delete all progress for this user
+    await db.execute({
+      sql: 'DELETE FROM user_progress WHERE user_id = ?',
+      args: [user.id],
+    });
+
+    // Reset user stats
+    await db.execute({
+      sql: `UPDATE users SET
+            xp = 0,
+            streak = 0,
+            total_correct = 0,
+            total_wrong = 0,
+            quizzes_played = 0
+            WHERE id = ?`,
+      args: [user.id],
+    });
+
+    return NextResponse.json({ message: 'Fortschritt zurückgesetzt.' });
+  } catch (error) {
+    console.error('Progress DELETE error:', error);
+    return NextResponse.json(
+      { error: 'Fehler beim Zurücksetzen des Fortschritts.' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getUser();

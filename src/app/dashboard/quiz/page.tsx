@@ -9,7 +9,6 @@ import { useSounds } from "@/lib/useSounds";
 import {
   ConfettiAnimation,
   TrophyAnimation,
-  SuccessAnimation,
 } from "@/components/LottieAnimations";
 import { KurdishFlag, GermanFlag } from "@/components/KurdishFlag";
 import {
@@ -557,13 +556,13 @@ function QuizContent() {
               {question.direction === "de_to_ku" ? (
                 <>
                   <GermanFlag className="w-6 h-4" />
-                  <ArrowRight className="w-4 h-4 text-[var(--gray-500)]" />
+                  <ArrowRight className="w-4 h-4 text-white" />
                   <KurdishFlag className="w-6 h-4" />
                 </>
               ) : (
                 <>
                   <KurdishFlag className="w-6 h-4" />
-                  <ArrowRight className="w-4 h-4 text-[var(--gray-500)]" />
+                  <ArrowRight className="w-4 h-4 text-white" />
                   <GermanFlag className="w-6 h-4" />
                 </>
               )}
@@ -605,9 +604,7 @@ function QuizContent() {
             >
               {feedback === "correct" ? (
                 <div className="flex items-center justify-center gap-3">
-                  <div className="w-14 h-14">
-                    <SuccessAnimation />
-                  </div>
+                  <CheckCircle2 className="w-14 h-14 text-[var(--green)] animate-bounce-in" />
                   <div>
                     <span className="font-extrabold text-2xl block">Richtig!</span>
                     <span className="xp-badge text-sm px-3 py-1 inline-block mt-1">+10 XP</span>

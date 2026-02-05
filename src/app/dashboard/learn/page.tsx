@@ -15,6 +15,7 @@ import {
   BookOpen,
   User,
 } from "lucide-react";
+import { CategoryIcon, CATEGORY_COLORS } from "@/components/CategoryIcons";
 
 interface ProgressEntry {
   level_id: number;
@@ -252,7 +253,6 @@ export default function LearnPage() {
             const cat = categories[level.cat];
             const levelName = cat?.label_ku || level.name;
             const levelDesc = cat?.label || level.desc;
-            const levelIcon = cat?.icon || level.icon;
 
             return (
               <button
@@ -297,8 +297,12 @@ export default function LearnPage() {
                 )}
 
                 {/* Level icon with animation on hover */}
-                <div className={`text-5xl mb-3 transition-transform duration-300 ${state === "current" ? "animate-bounce" : ""} ${state !== "locked" ? "hover:scale-110" : ""}`}>
-                  {levelIcon}
+                <div className={`mb-3 transition-transform duration-300 ${state === "current" ? "animate-bounce" : ""} ${state !== "locked" ? "hover:scale-110" : ""}`}>
+                  <CategoryIcon
+                    category={level.cat}
+                    levelId={level.id}
+                    className={`w-12 h-12 ${state === "locked" ? "text-gray-400" : CATEGORY_COLORS[level.cat] || "text-[var(--green)]"}`}
+                  />
                 </div>
 
                 {/* Level badge */}
