@@ -320,105 +320,144 @@ function QuizContent() {
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-[var(--green-bg)] to-[var(--background)] flex items-center justify-center p-4 overflow-hidden">
-        {/* Confetti particles */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(30)].map((_, i) => (
+        {/* Celebration Overlay - Confetti & Emojis */}
+        <div className="celebration-overlay">
+          {/* Confetti particles */}
+          {[...Array(40)].map((_, i) => (
             <div
-              key={i}
-              className="absolute rounded-full"
+              key={`confetti-${i}`}
+              className="confetti-particle"
               style={{
                 left: `${Math.random() * 100}%`,
-                top: `-10%`,
-                width: `${8 + Math.random() * 8}px`,
-                height: `${8 + Math.random() * 8}px`,
-                backgroundColor: ['#58CC02', '#FFC800', '#1CB0F6', '#FF4B4B', '#CE82FF', '#FF9500'][i % 6],
-                animation: `confettiFall ${3 + Math.random() * 2}s ease-out forwards`,
-                animationDelay: `${Math.random() * 1}s`,
+                top: `-5%`,
+                backgroundColor: ['#4CAF50', '#FFD54F', '#2196F3', '#F44336', '#9C27B0', '#FF9800'][i % 6],
+                animation: `confettiFall ${2.5 + Math.random() * 2}s ease-out forwards`,
+                animationDelay: `${Math.random() * 0.8}s`,
+                transform: `rotate(${Math.random() * 360}deg)`,
               }}
             />
+          ))}
+          {/* Floating celebration emojis */}
+          {['🎉', '⭐', '🏆', '✨', '🌟', '💫'].map((emoji, i) => (
+            <div
+              key={`emoji-${i}`}
+              className="absolute text-4xl animate-floating-emoji"
+              style={{
+                left: `${15 + i * 15}%`,
+                bottom: '10%',
+                animationDelay: `${i * 0.2}s`,
+              }}
+            >
+              {emoji}
+            </div>
           ))}
         </div>
 
         <div className="text-center max-w-md w-full relative z-10">
-          {/* Trophy animation */}
+          {/* Level Up Explosion Effect */}
           <div className="relative mb-6">
-            <div className="text-9xl animate-bounce-in">
+            {/* Rays behind trophy */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div
+                className="w-48 h-48 rounded-full animate-level-up-rays"
+                style={{
+                  background: 'conic-gradient(from 0deg, transparent, var(--gold), transparent, var(--gold), transparent)',
+                  opacity: 0.3,
+                }}
+              />
+            </div>
+            {/* Trophy */}
+            <div className="text-9xl animate-level-up relative z-10">
               🏆
             </div>
+            {/* Burst circles */}
             <div className="absolute inset-0 flex items-center justify-center -z-10">
-              <div className="w-32 h-32 rounded-full bg-yellow-200 animate-ping opacity-30" />
+              <div className="w-24 h-24 rounded-full bg-[var(--gold)] animate-celebration-burst" />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center -z-10">
+              <div className="w-24 h-24 rounded-full bg-[var(--green)] animate-celebration-burst" style={{ animationDelay: '0.2s' }} />
             </div>
           </div>
 
-          <h1 className="text-3xl font-extrabold text-[var(--gray-600)] mb-4 animate-fade-in-up">
-            Fantastisch! 🎉
+          <h1 className="text-4xl font-extrabold text-[var(--gray-700)] mb-2 animate-level-up-badge">
+            Level geschafft!
           </h1>
+          <p className="text-lg text-[var(--gray-500)] font-semibold mb-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+            Du bist fantastisch! 🎉
+          </p>
 
-          {/* Stars */}
-          <div className="flex justify-center gap-4 mb-6">
+          {/* Stars with sequential animation */}
+          <div className="flex justify-center gap-6 mb-8">
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
-                className={`relative ${s <= stars ? "animate-star-pop" : ""}`}
-                style={{ animationDelay: `${0.3 + s * 0.2}s` }}
+                className="relative"
+                style={{ animationDelay: `${0.5 + s * 0.25}s` }}
               >
-                <span className={`text-5xl ${s <= stars ? "" : "opacity-20 grayscale"}`}>
+                <span
+                  className={`text-6xl block transition-all duration-500 ${
+                    s <= stars
+                      ? "animate-star-pop drop-shadow-[0_0_15px_rgba(255,213,79,0.8)]"
+                      : "opacity-20 grayscale scale-75"
+                  }`}
+                  style={{ animationDelay: `${0.5 + s * 0.25}s` }}
+                >
                   ⭐
                 </span>
                 {s <= stars && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-yellow-300 animate-ping opacity-30" />
+                  <div className="absolute inset-0 flex items-center justify-center animate-celebration-burst" style={{ animationDelay: `${0.6 + s * 0.25}s` }}>
+                    <div className="w-8 h-8 rounded-full bg-[var(--gold)]" />
                   </div>
                 )}
               </div>
             ))}
           </div>
 
-          {/* XP Badge */}
+          {/* XP Badge with glow */}
           <div
-            className="inline-flex items-center gap-3 bg-gradient-to-r from-[var(--gold)] to-[#FFD700] text-white font-extrabold text-2xl rounded-full px-8 py-4 mb-8 shadow-xl animate-bounce-in"
-            style={{ animationDelay: '0.8s' }}
+            className="inline-flex items-center gap-3 xp-badge text-2xl rounded-full px-8 py-4 mb-8 animate-level-up-badge"
+            style={{ animationDelay: '1s' }}
           >
-            <span className="text-3xl">✨</span>
-            <span>+{xpEarned} XP</span>
-            <span className="text-3xl">✨</span>
+            <span className="text-3xl animate-bounce">✨</span>
+            <span className="text-[var(--gray-700)]">+{xpEarned} XP</span>
+            <span className="text-3xl animate-bounce" style={{ animationDelay: '0.1s' }}>✨</span>
           </div>
 
-          {/* Stats Card */}
-          <div className="bg-white rounded-3xl border-2 border-[var(--border)] p-6 mb-8 shadow-lg animate-slide-up" style={{ animationDelay: '0.5s' }}>
+          {/* Stats Card - Game style */}
+          <div className="game-card p-6 mb-8 animate-slide-up" style={{ animationDelay: '0.6s' }}>
             <div className="flex justify-around">
-              <div className="text-center group cursor-default">
-                <div className="w-14 h-14 mx-auto mb-2 bg-green-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <span className="text-2xl">✓</span>
+              <div className="text-center group cursor-default tap-feedback">
+                <div className="w-16 h-16 mx-auto mb-2 bg-[var(--green-bg)] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform border-2 border-[var(--green)]/20">
+                  <span className="text-3xl">✓</span>
                 </div>
-                <p className="text-2xl font-extrabold text-[var(--green)] tabular-nums">
+                <p className="text-3xl font-extrabold text-[var(--green)] tabular-nums">
                   {correctCount}
                 </p>
-                <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
+                <p className="text-xs font-bold text-[var(--gray-400)] uppercase tracking-wider">
                   Richtig
                 </p>
               </div>
               <div className="w-px bg-[var(--border)]" />
-              <div className="text-center group cursor-default">
-                <div className="w-14 h-14 mx-auto mb-2 bg-red-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <span className="text-2xl">✗</span>
+              <div className="text-center group cursor-default tap-feedback">
+                <div className="w-16 h-16 mx-auto mb-2 bg-red-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform border-2 border-[var(--red)]/20">
+                  <span className="text-3xl">✗</span>
                 </div>
-                <p className="text-2xl font-extrabold text-[var(--red)] tabular-nums">
+                <p className="text-3xl font-extrabold text-[var(--red)] tabular-nums">
                   {wrongCount}
                 </p>
-                <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
+                <p className="text-xs font-bold text-[var(--gray-400)] uppercase tracking-wider">
                   Falsch
                 </p>
               </div>
               <div className="w-px bg-[var(--border)]" />
-              <div className="text-center group cursor-default">
-                <div className="w-14 h-14 mx-auto mb-2 bg-blue-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <span className="text-2xl">%</span>
+              <div className="text-center group cursor-default tap-feedback">
+                <div className="w-16 h-16 mx-auto mb-2 bg-[var(--blue)]/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform border-2 border-[var(--blue)]/20">
+                  <span className="text-2xl font-bold text-[var(--blue)]">%</span>
                 </div>
-                <p className="text-2xl font-extrabold text-[var(--blue)] tabular-nums">
-                  {Math.round(pct)}%
+                <p className="text-3xl font-extrabold text-[var(--blue)] tabular-nums">
+                  {Math.round(pct)}
                 </p>
-                <p className="text-xs font-bold text-[var(--gray-400)] uppercase">
+                <p className="text-xs font-bold text-[var(--gray-400)] uppercase tracking-wider">
                   Genauigkeit
                 </p>
               </div>
@@ -427,8 +466,8 @@ function QuizContent() {
 
           <button
             onClick={handleClose}
-            className="btn-primary w-full text-lg py-4 tracking-wider hover-scale active-press animate-fade-in-up"
-            style={{ animationDelay: '0.7s' }}
+            className="btn-primary btn-ripple w-full text-lg py-5 tracking-wider animate-fade-in-up"
+            style={{ animationDelay: '0.9s' }}
           >
             Weiter lernen →
           </button>
@@ -479,17 +518,24 @@ function QuizContent() {
   const directionEmoji = question.direction === "de_to_ku" ? "🇩🇪 → 🟢" : "🟢 → 🇩🇪";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--background)] to-[#f0f0f0] flex flex-col">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-[var(--border)] shadow-sm">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--background)] to-[var(--gray-100)] flex flex-col">
+      {/* Floating XP indicator when correct */}
+      {feedback === "correct" && (
+        <div className="fixed top-1/3 left-1/2 -translate-x-1/2 z-50 floating-xp text-3xl">
+          +10 XP
+        </div>
+      )}
+
+      {/* Top Bar - Glass Header */}
+      <div className="sticky top-0 z-10 glass-header safe-area-top">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="w-10 h-10 rounded-full hover:bg-[var(--gray-50)] flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90"
+            className="w-11 h-11 rounded-full hover:bg-[var(--gray-100)] flex items-center justify-center transition-all duration-200 cursor-pointer tap-feedback"
           >
             <svg
-              className="w-6 h-6 text-[var(--gray-400)]"
+              className="w-6 h-6 text-[var(--gray-500)]"
               fill="none"
               stroke="currentColor"
               strokeWidth="2.5"
@@ -499,31 +545,20 @@ function QuizContent() {
             </svg>
           </button>
 
-          {/* Progress Bar */}
-          <div className="flex-1 h-4 bg-[var(--gray-100)] rounded-full overflow-hidden shadow-inner">
+          {/* Progress Bar with shine */}
+          <div className="flex-1 h-5 bg-[var(--gray-200)] rounded-full overflow-hidden shadow-inner">
             <div
-              className="h-full bg-gradient-to-r from-[var(--green)] via-[var(--green-light)] to-[var(--green)] rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+              className="h-full bg-gradient-to-r from-[var(--green)] to-[var(--green-light)] rounded-full transition-all duration-700 ease-out progress-bar-shine"
               style={{ width: `${progressPercent}%` }}
-            >
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-            </div>
+            />
           </div>
 
-          {/* Hearts */}
-          <div className="flex items-center gap-1.5 min-w-[80px] justify-end">
+          {/* Hearts Container */}
+          <div className="hearts-container min-w-[85px] justify-end">
             {[1, 2, 3].map((h) => (
               <span
                 key={h}
-                className={`text-2xl transition-all duration-300 ${
-                  h <= hearts
-                    ? "scale-100 opacity-100"
-                    : "scale-75 opacity-30 grayscale"
-                }`}
-                style={{
-                  animation: h <= hearts ? "heartPulse 1.5s ease-in-out infinite" : "none",
-                  animationDelay: `${h * 0.2}s`,
-                }}
+                className={`heart ${h <= hearts ? "active" : "lost"}`}
               >
                 ❤️
               </span>
@@ -535,67 +570,69 @@ function QuizContent() {
       {/* Question Area */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
         <div className="max-w-lg w-full">
-          {/* Direction label */}
-          <div className="text-center mb-4 animate-fade-in-down">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-[var(--border)]">
-              <span className="text-sm">{directionEmoji}</span>
-              <span className="text-sm font-bold text-[var(--gray-500)] uppercase tracking-wider">
+          {/* Direction label - Badge style */}
+          <div className="text-center mb-5 animate-fade-in-down">
+            <span className="level-badge inline-flex items-center gap-2 px-5 py-2">
+              <span className="text-base">{directionEmoji}</span>
+              <span className="text-xs font-bold uppercase tracking-wider">
                 {directionLabel}
               </span>
             </span>
           </div>
 
-          {/* Word Card */}
+          {/* Word Card - Game Card Style */}
           <div
             key={`card-${questionKey}`}
             className={`
-              bg-white rounded-3xl border-3 p-8 text-center mb-6 shadow-lg
-              transition-all duration-300 animate-zoom-in
+              game-card p-10 text-center mb-6 word-card-enter
               ${feedback === "correct"
-                ? "border-[var(--green)] bg-gradient-to-b from-white to-green-50 shadow-green-200"
+                ? "word-card-correct border-[var(--green)] bg-gradient-to-b from-white to-[var(--green-bg)]"
                 : feedback === "wrong"
-                ? "border-[var(--red)] bg-gradient-to-b from-white to-red-50 shadow-red-200 animate-shake"
-                : "border-[var(--border)]"
+                ? "word-card-wrong border-[var(--red)] bg-gradient-to-b from-white to-red-50"
+                : ""
               }
             `}
           >
-            <p className="text-4xl font-extrabold text-[var(--gray-700)] mb-2">
+            <p className="text-5xl font-extrabold text-[var(--gray-700)] mb-3 leading-tight">
               {promptWord}
             </p>
             {question.word.n && (
-              <p className="text-sm text-[var(--gray-400)] font-medium italic">
+              <p className="text-sm text-[var(--gray-400)] font-semibold italic">
                 ({question.word.n})
               </p>
             )}
           </div>
 
-          {/* Feedback Message */}
+          {/* Feedback Message with XP animation */}
           {feedback && (
             <div
-              className={`text-center mb-4 animate-bounce-in ${
+              className={`text-center mb-5 animate-bounce-in ${
                 feedback === "correct" ? "text-[var(--green)]" : "text-[var(--red)]"
               }`}
             >
               {feedback === "correct" ? (
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-3xl">✓</span>
-                  <span className="font-extrabold text-xl">Richtig! +10 XP</span>
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-4xl animate-bounce">✓</span>
+                  <div>
+                    <span className="font-extrabold text-2xl block">Richtig!</span>
+                    <span className="xp-badge text-sm px-3 py-1 inline-block mt-1">+10 XP</span>
+                  </div>
                 </div>
               ) : (
                 <div>
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <span className="text-2xl">✗</span>
-                    <span className="font-bold">Falsch</span>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-3xl animate-wrong-shake">✗</span>
+                    <span className="font-bold text-xl">Nicht ganz!</span>
                   </div>
-                  <p className="text-[var(--gray-600)] font-semibold">
-                    Richtig: <span className="text-[var(--green)]">{question.correctAnswer}</span>
+                  <p className="text-[var(--gray-600)] font-semibold text-base">
+                    Richtig wäre: <span className="text-[var(--green)] font-bold">{question.correctAnswer}</span>
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Multiple Choice Options - 4 elegant buttons */}
+          {/* Multiple Choice Options - Answer Option Style */}
           <div
             key={`options-${questionKey}`}
             className="grid grid-cols-1 gap-3"
@@ -604,58 +641,43 @@ function QuizContent() {
               const isSelected = selectedAnswer === option;
               const isCorrectOption = option === question.correctAnswer;
 
-              let buttonClasses = `
-                w-full p-5 rounded-2xl text-lg font-bold text-left
-                transition-all duration-200 cursor-pointer
-                border-2 flex items-center gap-4
-              `;
-
-              if (feedback) {
-                if (isCorrectOption) {
-                  buttonClasses += " bg-[var(--green-bg)] border-[var(--green)] text-[var(--green-dark)] scale-[1.02]";
-                } else if (isSelected && !isCorrectOption) {
-                  buttonClasses += " bg-red-50 border-[var(--red)] text-[var(--red-dark)]";
-                } else {
-                  buttonClasses += " bg-white border-[var(--border)] text-[var(--gray-400)] opacity-60";
-                }
-              } else {
-                buttonClasses += " bg-white border-[var(--border)] text-[var(--gray-600)] hover:border-[var(--blue)] hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]";
-              }
-
               return (
                 <button
                   key={idx}
                   onClick={() => checkAnswer(option)}
                   disabled={!!feedback}
-                  className={buttonClasses}
+                  className={`
+                    answer-option flex items-center gap-4 animate-option-slide
+                    ${feedback && isCorrectOption ? "correct" : ""}
+                    ${feedback && isSelected && !isCorrectOption ? "wrong" : ""}
+                    ${feedback && !isCorrectOption && !isSelected ? "opacity-50" : ""}
+                  `}
                   style={{
-                    animation: `slideInOption 0.4s ease-out forwards`,
-                    animationDelay: `${idx * 0.08}s`,
-                    opacity: 0,
+                    animationDelay: `${idx * 0.1}s`,
                   }}
                 >
                   {/* Option letter badge */}
                   <span className={`
-                    w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0
-                    transition-all duration-200
+                    w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg shrink-0
+                    transition-all duration-200 border-2
                     ${feedback && isCorrectOption
-                      ? "bg-[var(--green)] text-white"
+                      ? "bg-[var(--green)] border-[var(--green-dark)] text-white"
                       : feedback && isSelected && !isCorrectOption
-                      ? "bg-[var(--red)] text-white"
-                      : "bg-[var(--gray-100)] text-[var(--gray-500)]"
+                      ? "bg-[var(--red)] border-[var(--red-dark)] text-white"
+                      : "bg-[var(--gray-100)] border-[var(--gray-200)] text-[var(--gray-600)]"
                     }
                   `}>
                     {String.fromCharCode(65 + idx)}
                   </span>
 
-                  <span className="flex-1">{option}</span>
+                  <span className="flex-1 text-left">{option}</span>
 
                   {/* Checkmark/X indicator */}
                   {feedback && isCorrectOption && (
-                    <span className="text-[var(--green)] text-2xl animate-bounce-in">✓</span>
+                    <span className="text-[var(--green)] text-3xl animate-bounce-in">✓</span>
                   )}
                   {feedback && isSelected && !isCorrectOption && (
-                    <span className="text-[var(--red)] text-2xl animate-shake">✗</span>
+                    <span className="text-[var(--red)] text-3xl animate-wrong-shake">✗</span>
                   )}
                 </button>
               );
@@ -664,42 +686,15 @@ function QuizContent() {
         </div>
       </div>
 
-      {/* Question counter */}
-      <div className="text-center pb-4 text-sm font-semibold text-[var(--gray-400)]">
-        Frage {currentIndex + 1} von {questions.length}
+      {/* Question counter - Badge style */}
+      <div className="text-center pb-6 safe-area-bottom">
+        <span className="inline-flex items-center gap-2 bg-white border-2 border-[var(--border)] rounded-full px-5 py-2 shadow-sm">
+          <span className="text-sm font-bold text-[var(--gray-500)]">Frage</span>
+          <span className="text-lg font-extrabold text-[var(--green)] tabular-nums">{currentIndex + 1}</span>
+          <span className="text-sm font-bold text-[var(--gray-400)]">von</span>
+          <span className="text-lg font-extrabold text-[var(--gray-600)] tabular-nums">{questions.length}</span>
+        </span>
       </div>
-
-      <style jsx>{`
-        @keyframes slideInOption {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        @keyframes heartPulse {
-          0%, 100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.15);
-          }
-        }
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        .animate-shimmer {
-          animation: shimmer 2s infinite;
-        }
-      `}</style>
     </div>
   );
 }
