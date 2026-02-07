@@ -40,8 +40,7 @@ export function useWords(category?: string) {
     mountedRef.current = true;
 
     if (cachedWords) {
-      setWords(cachedWords);
-      setLoading(false);
+      // Already cached, no need to fetch
       return;
     }
 

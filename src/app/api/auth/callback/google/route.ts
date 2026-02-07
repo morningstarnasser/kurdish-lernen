@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     }
 
     const googleUser = await userInfoRes.json();
-    const { email, name, picture } = googleUser;
+    const { email, name } = googleUser;
 
     if (!email) {
       return NextResponse.redirect(`${appUrl}/login?error=no_email`);

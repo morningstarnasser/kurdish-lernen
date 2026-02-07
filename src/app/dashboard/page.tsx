@@ -15,7 +15,7 @@ import {
   Loader2,
   Hand,
 } from "lucide-react";
-import { CategoryIcon, CATEGORY_COLORS } from "@/components/CategoryIcons";
+import { CategoryIcon } from "@/components/CategoryIcons";
 
 interface UserData {
   id: number;

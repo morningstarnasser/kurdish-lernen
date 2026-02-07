@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, Fragment, useEffect } from "react";
 import { CATEGORIES } from "@/lib/words";
 import type { Word } from "@/lib/words";
 import { useWords } from "@/lib/useWords";
-import { Search, X, ArrowRight, ArrowLeftRight, Loader2 } from "lucide-react";
+import { Search, X, ArrowRight, Loader2 } from "lucide-react";
 import { CategoryIcon, CATEGORY_COLORS } from "@/components/CategoryIcons";
 import AudioPlayer from "@/components/AudioPlayer";
 

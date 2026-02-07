@@ -20,7 +20,6 @@ import {
   ArrowRight,
   RotateCcw,
   ArrowLeft,
-  Trophy,
   Sparkles,
   GraduationCap,
   CheckCircle2,

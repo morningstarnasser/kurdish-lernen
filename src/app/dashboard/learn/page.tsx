@@ -11,7 +11,6 @@ import {
   Play,
   Sparkles,
   Trophy,
-  GraduationCap,
   BookOpen,
   User,
 } from "lucide-react";
