@@ -184,16 +184,21 @@ function QuizContent() {
     [feedback, questions, currentIndex, saveStepProgress, playCorrect, playWrong]
   );
 
+  // Check for game over when hearts reach 0
+  useEffect(() => {
+    if (hearts <= 0 && !gameOver) {
+      const timer = setTimeout(() => {
+        setGameOver(true);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [hearts, gameOver]);
+
   // Auto-advance after feedback
   useEffect(() => {
-    if (!feedback) return;
+    if (!feedback || hearts <= 0) return;
 
     const timer = setTimeout(() => {
-      if (hearts <= 0 && feedback === "wrong") {
-        setGameOver(true);
-        return;
-      }
-
       if (currentIndex + 1 >= questions.length) {
         setShowComplete(true);
         return;
@@ -594,7 +599,7 @@ function QuizContent() {
               }
             `}
           >
-            <p className="text-5xl font-extrabold text-[var(--gray-700)] mb-3 leading-tight">
+            <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[var(--gray-700)] mb-3 leading-tight break-words">
               {promptWord}
             </p>
             {question.word.n && (
