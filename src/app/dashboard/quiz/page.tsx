@@ -599,7 +599,7 @@ function QuizContent() {
               }
             `}
           >
-            <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[var(--gray-700)] mb-3 leading-tight break-words">
+            <p className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-[var(--gray-700)] mb-3 leading-tight break-words overflow-hidden">
               {promptWord}
             </p>
             {question.word.n && (
