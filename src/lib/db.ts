@@ -104,4 +104,25 @@ export async function initDB() {
   } catch {
     // Column already exists, ignore
   }
+
+  // Migration: add audio_source column to words
+  try {
+    await client.execute(`ALTER TABLE words ADD COLUMN audio_source TEXT`);
+  } catch {
+    // Column already exists, ignore
+  }
+
+  // Migration: add definition_ku column to words
+  try {
+    await client.execute(`ALTER TABLE words ADD COLUMN definition_ku TEXT`);
+  } catch {
+    // Column already exists, ignore
+  }
+
+  // Migration: add definition_fetched_at column to words
+  try {
+    await client.execute(`ALTER TABLE words ADD COLUMN definition_fetched_at TEXT`);
+  } catch {
+    // Column already exists, ignore
+  }
 }

@@ -51,10 +51,10 @@ export async function POST(req: NextRequest) {
     const mimeType = audioFile.type || 'audio/webm';
     const dataUrl = `data:${mimeType};base64,${base64}`;
 
-    // Update word with audio URL
+    // Update word with audio URL and mark as manual upload
     await db.execute({
-      sql: 'UPDATE words SET audio_url = ? WHERE id = ?',
-      args: [dataUrl, Number(wordId)],
+      sql: 'UPDATE words SET audio_url = ?, audio_source = ? WHERE id = ?',
+      args: [dataUrl, 'manual', Number(wordId)],
     });
 
     return NextResponse.json({
@@ -100,7 +100,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await db.execute({
-      sql: 'UPDATE words SET audio_url = NULL WHERE id = ?',
+      sql: 'UPDATE words SET audio_url = NULL, audio_source = NULL WHERE id = ?',
       args: [word_id],
     });
 

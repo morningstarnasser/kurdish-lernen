@@ -5,6 +5,8 @@ export interface Word {
   n?: string;
   t?: number;
   a?: string; // audio URL
+  as?: string; // audio source: 'manual' | 'forvo' | 'tts'
+  def?: string; // Kurdish definition from Wiktionary
 }
 
 // DB word type (from API)
@@ -16,6 +18,8 @@ export interface DBWord {
   note: string | null;
   is_phrase: number;
   audio_url: string | null;
+  audio_source: string | null;
+  definition_ku: string | null;
 }
 
 // Convert DB word to Word format
@@ -27,6 +31,8 @@ export function dbWordToWord(w: DBWord): Word {
     n: w.note || undefined,
     t: w.is_phrase === 1 ? 1 : undefined,
     a: w.audio_url || undefined,
+    as: w.audio_source || undefined,
+    def: w.definition_ku || undefined,
   };
 }
 

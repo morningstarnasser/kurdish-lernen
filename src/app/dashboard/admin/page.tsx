@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { CATEGORIES } from "@/lib/words";
 
-type Tab = "words" | "categories" | "users" | "stats";
+type Tab = "words" | "categories" | "users" | "stats" | "audio";
 
 interface CategoryEntry {
   id: string;
@@ -26,6 +26,9 @@ interface DBWord {
   category: string;
   note: string | null;
   is_phrase: number;
+  audio_url: string | null;
+  audio_source: string | null;
+  definition_ku: string | null;
 }
 
 interface WordForm {
@@ -44,6 +47,311 @@ interface Toast {
 const emptyForm: WordForm = { de: "", ku: "", c: "greetings", n: "" };
 
 const WORDS_PER_PAGE = 50;
+
+// Audio & APIs Tab Component
+function AudioApiTab({ words, showToast, fetchWords }: {
+  words: DBWord[];
+  showToast: (msg: string, type: "success" | "error") => void;
+  fetchWords: () => Promise<void>;
+}) {
+  const [batchRunning, setBatchRunning] = useState<string | null>(null);
+  const [batchStats, setBatchStats] = useState<{ total: number; success: number; failed: number } | null>(null);
+
+  const wordsWithAudio = words.filter((w) => w.audio_url);
+  const wordsWithoutAudio = words.filter((w) => !w.audio_url);
+  const wordsWithDefinition = words.filter((w) => w.definition_ku);
+
+  const audioSourceCounts = {
+    manual: words.filter((w) => w.audio_source === "manual").length,
+    forvo: words.filter((w) => w.audio_source === "forvo").length,
+    tts: words.filter((w) => w.audio_source === "tts").length,
+  };
+
+  const runBatch = async (endpoint: string, label: string) => {
+    setBatchRunning(label);
+    setBatchStats(null);
+    try {
+      const res = await fetch(endpoint, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Fehler");
+      setBatchStats(data.stats);
+      showToast(`${label} abgeschlossen.`, "success");
+      fetchWords();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Fehler";
+      showToast(msg, "error");
+    } finally {
+      setBatchRunning(null);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#58CC02]/10 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#58CC02]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Mit Audio</p>
+              <p className="text-2xl font-extrabold text-[#58CC02]">{wordsWithAudio.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Ohne Audio</p>
+              <p className="text-2xl font-extrabold text-red-400">{wordsWithoutAudio.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#1CB0F6]/10 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#1CB0F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Definitionen</p>
+              <p className="text-2xl font-extrabold text-[#1CB0F6]">{wordsWithDefinition.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Gesamt</p>
+              <p className="text-2xl font-extrabold text-white">{words.length}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Audio Source Distribution */}
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+        <h3 className="text-lg font-bold text-white mb-4">Audio-Quellen</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-white/[0.02] rounded-lg">
+            <p className="text-2xl font-extrabold text-yellow-400">{audioSourceCounts.manual}</p>
+            <p className="text-xs text-gray-500 font-semibold uppercase mt-1">Manuell</p>
+          </div>
+          <div className="text-center p-4 bg-white/[0.02] rounded-lg">
+            <p className="text-2xl font-extrabold text-[#58CC02]">{audioSourceCounts.forvo}</p>
+            <p className="text-xs text-gray-500 font-semibold uppercase mt-1">Forvo</p>
+          </div>
+          <div className="text-center p-4 bg-white/[0.02] rounded-lg">
+            <p className="text-2xl font-extrabold text-[#1CB0F6]">{audioSourceCounts.tts}</p>
+            <p className="text-xs text-gray-500 font-semibold uppercase mt-1">TTS</p>
+          </div>
+        </div>
+        {wordsWithAudio.length > 0 && (
+          <div className="mt-4 w-full h-3 bg-white/5 rounded-full overflow-hidden flex">
+            {audioSourceCounts.manual > 0 && (
+              <div
+                className="h-full bg-yellow-400 transition-all duration-500"
+                style={{ width: `${(audioSourceCounts.manual / words.length) * 100}%` }}
+                title={`Manuell: ${audioSourceCounts.manual}`}
+              />
+            )}
+            {audioSourceCounts.forvo > 0 && (
+              <div
+                className="h-full bg-[#58CC02] transition-all duration-500"
+                style={{ width: `${(audioSourceCounts.forvo / words.length) * 100}%` }}
+                title={`Forvo: ${audioSourceCounts.forvo}`}
+              />
+            )}
+            {audioSourceCounts.tts > 0 && (
+              <div
+                className="h-full bg-[#1CB0F6] transition-all duration-500"
+                style={{ width: `${(audioSourceCounts.tts / words.length) * 100}%` }}
+                title={`TTS: ${audioSourceCounts.tts}`}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Batch Actions */}
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+        <h3 className="text-lg font-bold text-white mb-4">Batch-Aktionen</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <button
+            onClick={() => runBatch("/api/words/audio/generate", "Audio generieren")}
+            disabled={!!batchRunning}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-[#58CC02]/10 border border-[#58CC02]/20 text-[#58CC02] rounded-xl hover:bg-[#58CC02]/20 transition-all duration-200 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {batchRunning === "Audio generieren" ? (
+              <div className="w-4 h-4 border-2 border-[#58CC02] border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+            )}
+            Audio generieren
+          </button>
+
+          <button
+            onClick={() => runBatch("/api/words/tts/batch", "TTS generieren")}
+            disabled={!!batchRunning}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-[#1CB0F6]/10 border border-[#1CB0F6]/20 text-[#1CB0F6] rounded-xl hover:bg-[#1CB0F6]/20 transition-all duration-200 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {batchRunning === "TTS generieren" ? (
+              <div className="w-4 h-4 border-2 border-[#1CB0F6] border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            )}
+            TTS generieren
+          </button>
+
+          <button
+            onClick={() => runBatch("/api/words/definition/batch", "Definitionen holen")}
+            disabled={!!batchRunning}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-xl hover:bg-purple-500/20 transition-all duration-200 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {batchRunning === "Definitionen holen" ? (
+              <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            )}
+            Definitionen holen
+          </button>
+
+          <button
+            onClick={() => runBatch("/api/words/definition/batch", "Forvo scannen")}
+            disabled={!!batchRunning}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-xl hover:bg-yellow-500/20 transition-all duration-200 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {batchRunning === "Forvo scannen" ? (
+              <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            )}
+            Forvo scannen
+          </button>
+        </div>
+
+        {batchRunning && (
+          <div className="mt-4 flex items-center gap-3 p-4 bg-white/[0.02] rounded-lg">
+            <div className="w-5 h-5 border-2 border-[#58CC02] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-gray-300 font-medium">{batchRunning} laeuft...</p>
+          </div>
+        )}
+
+        {batchStats && !batchRunning && (
+          <div className="mt-4 p-4 bg-[#58CC02]/5 border border-[#58CC02]/20 rounded-lg">
+            <p className="text-sm text-[#58CC02] font-semibold">
+              Fertig: {batchStats.success} erfolgreich, {batchStats.failed} fehlgeschlagen (von {batchStats.total} gesamt)
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Words without Audio */}
+      {wordsWithoutAudio.length > 0 && (
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+          <h3 className="text-lg font-bold text-white mb-4">
+            Woerter ohne Audio ({wordsWithoutAudio.length})
+          </h3>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {wordsWithoutAudio.slice(0, 50).map((word) => (
+              <div
+                key={word.id}
+                className="flex items-center justify-between p-3 bg-white/[0.02] rounded-lg hover:bg-white/[0.04] transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-white font-medium">{word.de}</span>
+                  <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                  <span className="text-[#58CC02] font-medium">{word.ku}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/words/tts", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ word_id: word.id }),
+                        });
+                        if (res.ok) {
+                          showToast(`TTS fuer "${word.ku}" generiert.`, "success");
+                          fetchWords();
+                        } else {
+                          const data = await res.json();
+                          showToast(data.error || "Fehler", "error");
+                        }
+                      } catch {
+                        showToast("TTS-Fehler", "error");
+                      }
+                    }}
+                    className="px-3 py-1.5 text-xs font-semibold bg-[#1CB0F6]/10 text-[#1CB0F6] border border-[#1CB0F6]/20 rounded-lg hover:bg-[#1CB0F6]/20 transition-all"
+                  >
+                    TTS
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/words/forvo", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ word_id: word.id }),
+                        });
+                        if (res.ok) {
+                          showToast(`Forvo fuer "${word.ku}" geholt.`, "success");
+                          fetchWords();
+                        } else {
+                          const data = await res.json();
+                          showToast(data.error || "Fehler", "error");
+                        }
+                      } catch {
+                        showToast("Forvo-Fehler", "error");
+                      }
+                    }}
+                    className="px-3 py-1.5 text-xs font-semibold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-all"
+                  >
+                    Forvo
+                  </button>
+                </div>
+              </div>
+            ))}
+            {wordsWithoutAudio.length > 50 && (
+              <p className="text-center text-sm text-gray-500 py-2">
+                ...und {wordsWithoutAudio.length - 50} weitere
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const [user, setUser] = useState<UserData | null>(null);
@@ -577,6 +885,15 @@ export default function AdminPage() {
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+    },
+    {
+      id: "audio" as Tab,
+      label: "Audio & APIs",
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
         </svg>
       ),
     },
@@ -1309,6 +1626,11 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* AUDIO & APIs TAB */}
+        {activeTab === "audio" && (
+          <AudioApiTab words={words} showToast={showToast} fetchWords={fetchWords} />
         )}
       </main>
 

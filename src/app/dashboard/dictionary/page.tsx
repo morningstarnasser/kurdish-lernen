@@ -319,6 +319,12 @@ export default function DictionaryPage() {
                                   )}
                                 </div>
                               </div>
+                              {word.def && (
+                                <div className="border-t border-white/5 pt-2 mt-1">
+                                  <p className="text-xs text-[#1CB0F6]/70 font-semibold">Wate:</p>
+                                  <p className="text-xs text-gray-400 leading-relaxed">{word.def}</p>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div>
@@ -338,6 +344,12 @@ export default function DictionaryPage() {
                                 <p className="mt-1.5 text-xs text-gray-500 italic">
                                   {word.n}
                                 </p>
+                              )}
+                              {word.def && (
+                                <div className="mt-1.5">
+                                  <p className="text-xs text-[#1CB0F6]/70 font-semibold">Wate:</p>
+                                  <p className="text-xs text-gray-400 leading-relaxed">{word.def}</p>
+                                </div>
                               )}
                             </div>
                           )}

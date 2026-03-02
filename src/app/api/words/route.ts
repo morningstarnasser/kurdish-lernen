@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get('category');
     const search = searchParams.get('search');
 
-    let sql = 'SELECT id, de, ku, category, note, is_phrase, audio_url FROM words';
+    let sql = 'SELECT id, de, ku, category, note, is_phrase, audio_url, audio_source, definition_ku FROM words';
     const args: (string | number)[] = [];
     const conditions: string[] = [];
 
@@ -40,6 +40,8 @@ export async function GET(req: NextRequest) {
       note: r.note || null,
       is_phrase: r.is_phrase,
       audio_url: r.audio_url || null,
+      audio_source: r.audio_source || null,
+      definition_ku: r.definition_ku || null,
     }));
 
     const response = NextResponse.json({ words });

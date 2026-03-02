@@ -25,12 +25,18 @@ import {
   CheckCircle2,
   XCircle,
   Percent,
+  Volume2,
 } from "lucide-react";
+
+interface QuizOption {
+  text: string;
+  audioUrl?: string;
+}
 
 interface Question {
   word: Word;
   direction: "de_to_ku" | "ku_to_de";
-  options: string[];
+  options: QuizOption[];
   correctAnswer: string;
 }
 
@@ -64,6 +70,51 @@ function QuizContent() {
   const [gameOver, setGameOver] = useState(false);
   const [saving, setSaving] = useState(false);
   const [questionKey, setQuestionKey] = useState(0); // For re-animating options
+
+  // Play word audio (pronunciation) — stored audio or browser TTS fallback
+  const playWordAudio = useCallback((audioUrl: string) => {
+    try {
+      const audio = new Audio(audioUrl);
+      audio.play().catch(() => {});
+    } catch {
+      // Ignore audio errors
+    }
+  }, []);
+
+  // Speak Kurdish text via browser SpeechSynthesis (fallback when no stored audio)
+  const speakKurdish = useCallback((text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    // Clean text: take first alternative before " / "
+    const cleanText = text.split(" / ")[0].trim();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    // Try Kurdish, fall back to Turkish (phonetically close for Badini)
+    const voices = window.speechSynthesis.getVoices();
+    const kurdishVoice = voices.find((v) => v.lang.startsWith("ku"));
+    const turkishVoice = voices.find((v) => v.lang.startsWith("tr"));
+    if (kurdishVoice) {
+      utterance.voice = kurdishVoice;
+      utterance.lang = kurdishVoice.lang;
+    } else if (turkishVoice) {
+      utterance.voice = turkishVoice;
+      utterance.lang = turkishVoice.lang;
+    } else {
+      utterance.lang = "tr-TR";
+    }
+    utterance.rate = 0.85;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  // Play option audio: stored audio URL first, then browser TTS
+  const playOptionAudio = useCallback((audioUrl: string | undefined, text: string) => {
+    if (audioUrl) {
+      playWordAudio(audioUrl);
+    } else {
+      speakKurdish(text);
+    }
+  }, [playWordAudio, speakKurdish]);
 
   // Initialize audio on first interaction
   useEffect(() => {
@@ -100,16 +151,24 @@ function QuizContent() {
 
       const correctAnswer = direction === "de_to_ku" ? word.ku : word.de;
 
-      // Get 3 wrong options
-      const wrongOptions = shuffleArray(
+      // Get 3 wrong options with audio info
+      const wrongWords = shuffleArray(
         allCategoryWords.filter(
           (w) => (direction === "de_to_ku" ? w.ku : w.de) !== correctAnswer
         )
-      )
-        .slice(0, 3)
-        .map((w) => (direction === "de_to_ku" ? w.ku : w.de));
+      ).slice(0, 3);
 
-      const options = shuffleArray([correctAnswer, ...wrongOptions]);
+      const correctOption: QuizOption = {
+        text: correctAnswer,
+        audioUrl: direction === "de_to_ku" ? word.a : undefined,
+      };
+
+      const wrongOptionObjs: QuizOption[] = wrongWords.map((w) => ({
+        text: direction === "de_to_ku" ? w.ku : w.de,
+        audioUrl: direction === "de_to_ku" ? w.a : undefined,
+      }));
+
+      const options = shuffleArray([correctOption, ...wrongOptionObjs]);
 
       return {
         word,
@@ -177,10 +236,13 @@ function QuizContent() {
         playWrong();
       }
 
+      // Auto-play Kurdish pronunciation of the correct word
+      setTimeout(() => playOptionAudio(question.word.a, question.word.ku), 400);
+
       setSelectedAnswer(answer);
       saveStepProgress(isCorrect);
     },
-    [feedback, questions, currentIndex, saveStepProgress, playCorrect, playWrong]
+    [feedback, questions, currentIndex, saveStepProgress, playCorrect, playWrong, playOptionAudio]
   );
 
   // Check for game over when hearts reach 0
@@ -188,7 +250,7 @@ function QuizContent() {
     if (hearts <= 0 && !gameOver) {
       const timer = setTimeout(() => {
         setGameOver(true);
-      }, 1200);
+      }, 1800);
       return () => clearTimeout(timer);
     }
   }, [hearts, gameOver]);
@@ -207,7 +269,7 @@ function QuizContent() {
       setQuestionKey((k) => k + 1);
       setFeedback(null);
       setSelectedAnswer(null);
-    }, 1200);
+    }, 1800);
 
     return () => clearTimeout(timer);
   }, [feedback, currentIndex, questions.length, hearts]);
@@ -598,9 +660,20 @@ function QuizContent() {
               }
             `}
           >
-            <p className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-[var(--gray-700)] mb-3 leading-tight break-words overflow-hidden">
-              {promptWord}
-            </p>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <p className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-[var(--gray-700)] leading-tight break-words overflow-hidden">
+                {promptWord}
+              </p>
+              {question.direction === "ku_to_de" && (
+                <button
+                  onClick={() => playOptionAudio(question.word.a, question.word.ku)}
+                  className="w-10 h-10 rounded-full bg-[var(--green)]/10 border border-[var(--green)]/20 flex items-center justify-center text-[var(--green)] hover:bg-[var(--green)]/20 transition-all shrink-0"
+                  title="Aussprache abspielen"
+                >
+                  <Volume2 className="w-5 h-5" />
+                </button>
+              )}
+            </div>
             {question.word.n && (
               <p className="text-sm text-[var(--gray-400)] font-semibold italic">
                 ({question.word.n})
@@ -643,13 +716,13 @@ function QuizContent() {
             className="grid grid-cols-1 gap-3"
           >
             {question.options.map((option, idx) => {
-              const isSelected = selectedAnswer === option;
-              const isCorrectOption = option === question.correctAnswer;
+              const isSelected = selectedAnswer === option.text;
+              const isCorrectOption = option.text === question.correctAnswer;
 
               return (
                 <button
                   key={idx}
-                  onClick={() => checkAnswer(option)}
+                  onClick={() => checkAnswer(option.text)}
                   disabled={!!feedback}
                   className={`
                     answer-option flex items-center gap-4 animate-option-slide
@@ -675,14 +748,30 @@ function QuizContent() {
                     {String.fromCharCode(65 + idx)}
                   </span>
 
-                  <span className="flex-1 text-left">{option}</span>
+                  <span className="flex-1 text-left">{option.text}</span>
+
+                  {/* Speaker icon for Kurdish pronunciation */}
+                  {question.direction === "de_to_ku" && (
+                    <span
+                      role="button"
+                      tabIndex={-1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        playOptionAudio(option.audioUrl, option.text);
+                      }}
+                      className="w-9 h-9 rounded-full bg-[var(--green)]/10 border border-[var(--green)]/20 flex items-center justify-center text-[var(--green)] hover:bg-[var(--green)]/20 transition-all shrink-0"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </span>
+                  )}
 
                   {/* Checkmark/X indicator - Lucide Icons */}
                   {feedback && isCorrectOption && (
-                    <CheckCircle2 className="w-8 h-8 text-[var(--green)] animate-bounce-in" />
+                    <CheckCircle2 className="w-8 h-8 text-[var(--green)] animate-bounce-in shrink-0" />
                   )}
                   {feedback && isSelected && !isCorrectOption && (
-                    <XCircle className="w-8 h-8 text-[var(--red)] animate-wrong-shake" />
+                    <XCircle className="w-8 h-8 text-[var(--red)] animate-wrong-shake shrink-0" />
                   )}
                 </button>
               );
